@@ -104,7 +104,17 @@ function AddEmployee({ onBack, editData }) {
       onBack();
     } catch (err) {
       console.error(err);
-      setError(err.response?.data || 'Failed to save employee. Please try again.');
+      let errMsg = 'Failed to save employee. Please try again.';
+      if (err.response?.data) {
+        if (typeof err.response.data === 'string') {
+          errMsg = err.response.data;
+        } else if (err.response.data.message) {
+          errMsg = err.response.data.message;
+        } else if (err.response.data.error) {
+          errMsg = err.response.data.error;
+        }
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
