@@ -707,6 +707,16 @@ td {
     border-bottom: 1px solid var(--border-color);
     padding: 16px;
     flex-direction: column !important;
+    position: relative !important;
+  }
+
+  .sidebar.closed {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    margin-left: 0 !important;
+    width: 100% !important;
   }
   
   .sidebar-nav {

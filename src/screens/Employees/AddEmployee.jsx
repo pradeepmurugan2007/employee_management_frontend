@@ -4,9 +4,11 @@ import {
   Calendar, Save
 } from 'lucide-react';
 import { createEmployee, updateEmployee } from '../../api/employeeApi';
+import { getDepartments } from '../../api/departmentApi';
 
 function AddEmployee({ onBack, editData }) {
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState([]);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -41,6 +43,11 @@ function AddEmployee({ onBack, editData }) {
       });
     }
   }, [editData]);
+
+  useEffect(() => {
+    // Fetch departments for the dropdown
+    getDepartments().then(res => setDepartments(res.data)).catch(console.error);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -152,7 +159,7 @@ function AddEmployee({ onBack, editData }) {
           {/* Personal Information */}
           <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Personal Information</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>First Name <span style={{ color: '#ef4444' }}>*</span></label>
                 <input name="firstName" value={formData.firstName} onChange={handleChange} type="text" placeholder="Enter first name" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
@@ -166,7 +173,7 @@ function AddEmployee({ onBack, editData }) {
                 <input name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '12px' }}>Gender</label>
                 <div style={{ display: 'flex', gap: '20px' }}>
@@ -187,7 +194,7 @@ function AddEmployee({ onBack, editData }) {
           {/* Job Information */}
           <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Job Information</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Employee ID</label>
                 <input type="text" value={editData?.employeeCode || 'Auto-generated'} disabled style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f8fafc', color: '#94a3b8', outline: 'none', boxSizing: 'border-box' }} />
@@ -196,11 +203,9 @@ function AddEmployee({ onBack, editData }) {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department <span style={{ color: '#ef4444' }}>*</span></label>
                 <select name="departmentName" value={formData.departmentName} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
                   <option value="">Select department</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="Design">Design</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Finance">Finance</option>
+                  {departments.filter(d => d.status === 'ACTIVE').map(dept => (
+                    <option key={dept.id} value={dept.departmentName}>{dept.departmentName}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -217,7 +222,7 @@ function AddEmployee({ onBack, editData }) {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Joining Date</label>
                 <input name="joiningDate" value={formData.joiningDate} onChange={handleChange} type="date" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
@@ -244,7 +249,7 @@ function AddEmployee({ onBack, editData }) {
           {/* Contact Information */}
           <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Contact Information</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Email <span style={{ color: '#ef4444' }}>*</span></label>
                 <input name="email" value={formData.email} onChange={handleChange} type="email" placeholder="Enter email address" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />

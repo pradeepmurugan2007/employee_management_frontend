@@ -38,8 +38,12 @@ function Attendance() {
       const lastDayDate = new Date(year, month, 0);
       const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
 
+      const params = { from: firstDay, to: lastDay };
+      if (searchTerm) params.search = searchTerm;
+      // status filter would go here if we implemented it in the UI, currently the UI says "All Status" but it's hardcoded html
+      
       const [attRes, sumRes] = await Promise.all([
-        getAttendance({ from: firstDay, to: lastDay }),
+        getAttendance(params),
         getAttendanceSummary(today)
       ]);
       setRecords(attRes.data);
@@ -76,8 +80,11 @@ function Attendance() {
   };
 
   useEffect(() => {
-    fetchAttendanceData();
-  }, [listMonth]);
+    const timer = setTimeout(() => {
+      fetchAttendanceData();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [listMonth, searchTerm]);
 
   const getStatusColor = (status) => {
     if (!status) return '#f1f5f9';
@@ -101,9 +108,7 @@ function Attendance() {
     }
   };
 
-  const filteredRecords = records.filter(record =>
-    (record.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRecords = records;
 
   return (
     <div>

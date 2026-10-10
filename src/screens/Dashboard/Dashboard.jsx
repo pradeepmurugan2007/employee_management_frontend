@@ -37,12 +37,22 @@ function Dashboard() {
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [sumRes, empRes, leaveRes, deptRes, attRes] = await Promise.all([
+      
+      // Calculate last 7 days for the chart
+      const last7Days = Array.from({length: 7}, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d.toISOString().split('T')[0];
+      });
+      
+      const attendancePromises = last7Days.map(date => getAttendanceSummary(date));
+      
+      const [sumRes, empRes, leaveRes, deptRes, ...attResults] = await Promise.all([
         getDashboardSummary(today),
         getRecentEmployees(5),
         getPendingLeaves(5),
         getDepartmentStats(),
-        getAttendanceSummary(today)
+        ...attendancePromises
       ]);
       setSummary(sumRes.data);
       setRecentEmployees(empRes.data);
@@ -55,16 +65,18 @@ function Dashboard() {
       }));
       setDeptStats(depts);
 
-      // Dummy weekly attendance for now since API returns single day
-      setAttendanceChart([
-        { name: 'Mon', present: 70, absent: 30 },
-        { name: 'Tue', present: 55, absent: 45 },
-        { name: 'Wed', present: 80, absent: 20 },
-        { name: 'Thu', present: 90, absent: 10 },
-        { name: 'Fri', present: attRes.data.present || 0, absent: attRes.data.absent || 0 },
-        { name: 'Sat', present: 35, absent: 65 },
-        { name: 'Sun', present: 25, absent: 75 },
-      ]);
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const chartData = last7Days.map((dateStr, idx) => {
+        const d = new Date(dateStr);
+        const dayName = daysOfWeek[d.getDay()];
+        const attData = attResults[idx].data;
+        return {
+          name: dayName,
+          present: attData.present || 0,
+          absent: attData.absent || 0
+        };
+      });
+      setAttendanceChart(chartData);
     } catch (err) {
       console.error(err);
     } finally {
@@ -81,7 +93,8 @@ function Dashboard() {
       await makeLeaveDecision(id, decision, '');
       fetchData(); // Refresh list
     } catch (err) {
-      alert('Failed to update leave request');
+      const msg = err.response?.data?.message || err.response?.data || err.message;
+      alert(`Failed to update leave request: ${msg}`);
     }
   };
 

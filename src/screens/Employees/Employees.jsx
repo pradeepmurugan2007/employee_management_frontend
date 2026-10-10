@@ -27,7 +27,10 @@ function Employees() {
     setLoading(true);
     setError(null);
     try {
-      const res = await getEmployees(statusFilter ? { status: statusFilter } : {});
+      const params = {};
+      if (statusFilter) params.status = statusFilter;
+      if (searchTerm) params.search = searchTerm;
+      const res = await getEmployees(params);
       setEmployees(res.data);
     } catch (err) {
       setError('Failed to load employees. Make sure the backend is running.');
@@ -37,8 +40,11 @@ function Employees() {
   };
 
   useEffect(() => {
-    fetchEmployees();
-  }, [statusFilter]);
+    const timer = setTimeout(() => {
+      fetchEmployees();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [statusFilter, searchTerm]);
 
   const getStatusColor = (status) => {
     if (!status) return '#f1f5f9';
@@ -80,15 +86,7 @@ function Employees() {
     }
   };
 
-  const filteredEmployees = employees.filter(emp => {
-    const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
-    const term = searchTerm.toLowerCase();
-    return (
-      fullName.includes(term) ||
-      (emp.email || '').toLowerCase().includes(term) ||
-      (emp.employeeCode || '').toLowerCase().includes(term)
-    );
-  });
+  const filteredEmployees = employees;
 
 
   if (isAddingEmployee) {
