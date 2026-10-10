@@ -1,5 +1,6 @@
-import Login from "./Login"
-import Home from "./Home"
+import Login from "./screens/Login/Login"
+import ResetPassword from "./screens/Login/ResetPassword"
+import Home from "./screens/Home/Home"
 
 import {
   Routes,
@@ -13,13 +14,12 @@ function App() {
     <Routes>
 
       <Route path="/" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       
-
       <Route
         path="/home"
         element={<Home />}
       />
-
     </Routes>
   )
 }

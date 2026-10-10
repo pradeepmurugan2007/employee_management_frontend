@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
 
   server: {
-
+    host: true,
     allowedHosts: [
       "spectrochemical-tyra-souplike.ngrok-free.dev"
     ]
