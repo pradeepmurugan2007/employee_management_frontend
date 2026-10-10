@@ -21,13 +21,25 @@ function Attendance() {
   const [selectedDate, setSelectedDate] = useState(10);
   const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
 
+  const [listMonth, setListMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
   const fetchAttendanceData = async () => {
     setLoading(true);
     setError('');
     try {
       const today = new Date().toISOString().split('T')[0];
+      
+      // Calculate first and last day of selected month
+      const [year, month] = listMonth.split('-');
+      const firstDay = `${year}-${month}-01`;
+      const lastDayDate = new Date(year, month, 0);
+      const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+
       const [attRes, sumRes] = await Promise.all([
-        getAttendance(),
+        getAttendance({ from: firstDay, to: lastDay }),
         getAttendanceSummary(today)
       ]);
       setRecords(attRes.data);
@@ -65,7 +77,7 @@ function Attendance() {
 
   useEffect(() => {
     fetchAttendanceData();
-  }, []);
+  }, [listMonth]);
 
   const getStatusColor = (status) => {
     if (!status) return '#f1f5f9';
@@ -102,10 +114,14 @@ function Attendance() {
           <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>View and manage employee attendance records</p>
         </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative' }}>
             <CalendarDays size={18} color="#64748b" />
-            October 2026
-            <ChevronDown size={16} color="#64748b" />
+            <input 
+              type="month" 
+              value={listMonth}
+              onChange={(e) => setListMonth(e.target.value)}
+              style={{ border: 'none', outline: 'none', color: '#334155', fontWeight: '500', fontFamily: 'inherit', background: 'transparent', cursor: 'pointer' }}
+            />
           </div>
           <button
             onClick={() => setIsMarkingAttendance(true)}
@@ -411,16 +427,12 @@ function Attendance() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Time <span style={{ color: '#ef4444' }}>*</span></label>
-                  <div style={{ position: 'relative' }}>
-                    <Clock size={18} color="#94a3b8" style={{ position: 'absolute', top: '10px', left: '12px', pointerEvents: 'none' }} />
-                    <input
-                      type="time"
-                      style={{ width: '100%', padding: '10px 36px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: 'white', boxSizing: 'border-box', display: 'flex', alignItems: 'center', outline: 'none' }}
-                      value={selectedTime}
-                      onChange={(e) => setSelectedTime(e.target.value)}
-                    />
-                    <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', top: '12px', right: '12px', pointerEvents: 'none' }} />
-                  </div>
+                  <input
+                    type="time"
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: 'white', boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }}
+                    value={selectedTime}
+                    onChange={(e) => setSelectedTime(e.target.value)}
+                  />
                 </div>
               </div>
 

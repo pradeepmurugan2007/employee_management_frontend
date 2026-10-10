@@ -8,37 +8,116 @@ import {
   Legend
 } from 'recharts';
 
-// Mock data for the Attendance Trend chart
-const trendData = [
-  { name: '1 Oct', present: 60, absent: 10, late: 5, leave: 8 },
-  { name: '5 Oct', present: 55, absent: 25, late: 10, leave: 5 },
-  { name: '10 Oct', present: 70, absent: 5, late: 2, leave: 15 },
-  { name: '15 Oct', present: 65, absent: 15, late: 8, leave: 10 },
-  { name: '20 Oct', present: 50, absent: 20, late: 15, leave: 10 },
-  { name: '25 Oct', present: 75, absent: 5, late: 2, leave: 5 },
-  { name: '31 Oct', present: 68, absent: 12, late: 6, leave: 8 },
-];
-
-// Mock data for the Department Wise chart
-const deptWiseData = [
-  { name: 'Engineering', present: 42, absent: 4, late: 3, leave: 5 },
-  { name: 'Design', present: 28, absent: 6, late: 4, leave: 2 },
-  { name: 'Operations', present: 24, absent: 5, late: 3, leave: 4 },
-  { name: 'Marketing', present: 18, absent: 4, late: 2, leave: 3 },
-  { name: 'Finance', present: 10, absent: 2, late: 1, leave: 1 },
-  { name: 'HR', present: 6, absent: 1, late: 2, leave: 1 },
-];
-
-// Mock data for the table
-const reportRecords = [
-  { id: 1, name: 'Arun Kumar', empId: 'EMP001', dept: 'Engineering', total: 31, present: 26, absent: 2, late: 1, leave: 2, percentage: 84 },
-  { id: 2, name: 'Priya S', empId: 'EMP002', dept: 'Design', total: 31, present: 24, absent: 4, late: 2, leave: 1, percentage: 77 },
-  { id: 3, name: 'Rahul V', empId: 'EMP003', dept: 'Operations', total: 31, present: 23, absent: 5, late: 2, leave: 1, percentage: 74 },
-  { id: 4, name: 'Sneha R', empId: 'EMP004', dept: 'Marketing', total: 31, present: 26, absent: 2, late: 1, leave: 2, percentage: 84 },
-  { id: 5, name: 'Vikram K', empId: 'EMP005', dept: 'Engineering', total: 31, present: 24, absent: 3, late: 3, leave: 1, percentage: 77 },
-];
+import { useState, useEffect } from 'react';
+import { getAttendance } from '../../api/attendanceApi';
 
 function Reports() {
+  const [loading, setLoading] = useState(true);
+  const [rawRecords, setRawRecords] = useState([]);
+  const [stats, setStats] = useState({ totalEmp: 0, present: 0, absent: 0, late: 0, leave: 0 });
+  const [trendData, setTrendData] = useState([]);
+  const [deptWiseData, setDeptWiseData] = useState([]);
+  const [reportRecords, setReportRecords] = useState([]);
+
+  // Filter state
+  const [listMonth, setListMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  
+  useEffect(() => {
+    fetchReportData();
+  }, [listMonth]);
+
+  const fetchReportData = async () => {
+    setLoading(true);
+    try {
+      const [year, month] = listMonth.split('-');
+      const firstDay = `${year}-${month}-01`;
+      const lastDayDate = new Date(year, month, 0);
+      const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+
+      const response = await getAttendance({ from: firstDay, to: lastDay });
+      const records = response.data || [];
+      setRawRecords(records);
+      
+      aggregateData(records, lastDayDate.getDate());
+    } catch (error) {
+      console.error('Failed to fetch report data', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const aggregateData = (records, totalDaysInMonth) => {
+    let present = 0, absent = 0, late = 0, leave = 0;
+    const employees = new Map();
+    const trendMap = new Map();
+    const deptMap = new Map();
+
+    records.forEach(r => {
+      // Counters
+      const st = (r.status || 'ABSENT').toUpperCase();
+      if (st === 'PRESENT') present++;
+      else if (st === 'ABSENT') absent++;
+      else if (st === 'LATE') late++;
+      else if (st === 'ON_LEAVE' || st === 'LEAVE') leave++;
+      else absent++; // default unmapped
+
+      // Employee Aggregation
+      if (!employees.has(r.employeeId)) {
+        employees.set(r.employeeId, {
+          id: r.employeeId,
+          name: r.employeeName || 'Unknown',
+          empId: `EMP${String(r.employeeId).padStart(3, '0')}`,
+          dept: r.departmentName || 'General',
+          total: totalDaysInMonth,
+          present: 0, absent: 0, late: 0, leave: 0,
+        });
+      }
+      const emp = employees.get(r.employeeId);
+      if (st === 'PRESENT') emp.present++;
+      if (st === 'ABSENT') emp.absent++;
+      if (st === 'LATE') emp.late++;
+      if (st === 'ON_LEAVE' || st === 'LEAVE') emp.leave++;
+
+      // Trend Data (Group by date)
+      const dDate = r.workDate; 
+      if (!trendMap.has(dDate)) trendMap.set(dDate, { name: dDate.substring(8, 10) + ' ' + listMonth.substring(5, 7), present: 0, absent: 0, late: 0, leave: 0 });
+      const tr = trendMap.get(dDate);
+      if (st === 'PRESENT') tr.present++;
+      if (st === 'ABSENT') tr.absent++;
+      if (st === 'LATE') tr.late++;
+      if (st === 'ON_LEAVE' || st === 'LEAVE') tr.leave++;
+
+      // Dept Data
+      const dept = r.departmentName || 'General';
+      if (!deptMap.has(dept)) deptMap.set(dept, { name: dept, present: 0, absent: 0, late: 0, leave: 0 });
+      const dp = deptMap.get(dept);
+      if (st === 'PRESENT') dp.present++;
+      if (st === 'ABSENT') dp.absent++;
+      if (st === 'LATE') dp.late++;
+      if (st === 'ON_LEAVE' || st === 'LEAVE') dp.leave++;
+    });
+
+    setStats({ totalEmp: employees.size, present, absent, late, leave });
+
+    // Format Trend
+    const sortedTrend = Array.from(trendMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(e => e[1]);
+    setTrendData(sortedTrend.length > 0 ? sortedTrend : [{name: 'No Data', present:0, absent:0, late:0, leave:0}]);
+
+    // Format Dept
+    const sortedDept = Array.from(deptMap.values()).sort((a,b) => b.present - a.present);
+    setDeptWiseData(sortedDept.length > 0 ? sortedDept : [{name: 'No Data', present:0, absent:0, late:0, leave:0}]);
+
+    // Format Table
+    const tableData = Array.from(employees.values()).map(emp => {
+      const percentage = Math.round((emp.present / emp.total) * 100) || 0;
+      return { ...emp, percentage };
+    });
+    setReportRecords(tableData);
+  };
+
   return (
     <div>
       {/* Header Area */}
@@ -73,10 +152,15 @@ function Reports() {
       {/* Filter Bar */}
       <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px', border: '1px solid #e2e8f0' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#64748b', marginBottom: '6px' }}>Date Range</label>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#64748b', marginBottom: '6px' }}>Report Month</label>
           <div style={{ position: 'relative' }}>
-            <CalendarDays size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" defaultValue="01 Oct 2026 - 31 Oct 2026" style={{ width: '100%', padding: '10px 10px 10px 36px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', color: '#0f172a', fontWeight: '500', boxSizing: 'border-box' }} />
+            <CalendarDays size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }} />
+            <input 
+              type="month" 
+              value={listMonth}
+              onChange={(e) => setListMonth(e.target.value)}
+              style={{ width: '100%', padding: '10px 10px 10px 36px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', color: '#0f172a', fontWeight: '500', boxSizing: 'border-box' }} 
+            />
           </div>
         </div>
         <div>
@@ -114,7 +198,7 @@ function Reports() {
           <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Users size={24} /></div>
           <div>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Employees</p>
-            <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>128</h2>
+            <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.totalEmp}</h2>
           </div>
         </div>
 
@@ -123,11 +207,7 @@ function Reports() {
           <div>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Present Days</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>2,856</h2>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={10} style={{marginRight: '2px'}}/> +6%</span>
-                <span style={{ color: '#94a3b8', fontSize: '9px' }}>vs last month</span>
-              </div>
+              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.present}</h2>
             </div>
           </div>
         </div>
@@ -137,11 +217,7 @@ function Reports() {
           <div>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Absent Days</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>214</h2>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={10} style={{marginRight: '2px'}}/> +12%</span>
-                <span style={{ color: '#94a3b8', fontSize: '9px' }}>vs last month</span>
-              </div>
+              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.absent}</h2>
             </div>
           </div>
         </div>
@@ -151,11 +227,7 @@ function Reports() {
           <div>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Late Days</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>96</h2>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={10} style={{marginRight: '2px'}}/> +8%</span>
-                <span style={{ color: '#94a3b8', fontSize: '9px' }}>vs last month</span>
-              </div>
+              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.late}</h2>
             </div>
           </div>
         </div>
@@ -165,11 +237,7 @@ function Reports() {
           <div>
             <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Leave Days</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>180</h2>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#10b981', fontSize: '10px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={10} style={{marginRight: '2px'}}/> +5%</span>
-                <span style={{ color: '#94a3b8', fontSize: '9px' }}>vs last month</span>
-              </div>
+              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.leave}</h2>
             </div>
           </div>
         </div>
@@ -282,7 +350,20 @@ function Reports() {
               </tr>
             </thead>
             <tbody>
-              {reportRecords.map((record) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                    Loading reports...
+                  </td>
+                </tr>
+              ) : reportRecords.length === 0 ? (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                    No data available for the selected period.
+                  </td>
+                </tr>
+              ) : (
+                reportRecords.map((record) => (
                 <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '16px', color: '#0f172a', fontWeight: '500' }}>{record.id}</td>
                   <td style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -314,7 +395,7 @@ function Reports() {
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
