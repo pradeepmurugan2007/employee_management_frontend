@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Users, CalendarCheck, LayoutDashboard, ChevronDown, TrendingUp, TrendingDown, Check, X, Eye } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { getDashboardSummary, getRecentEmployees, getPendingLeaves, getDepartmentStats } from '../../api/dashboardApi';
@@ -29,13 +29,11 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [recentEmployees, setRecentEmployees] = useState([]);
-  const [pendingLeavesList, setPendingLeavesList] = useState([]);
-  const [deptStats, setDeptStats] = useState([]);
-  const [attendanceChart, setAttendanceChart] = useState([]);
   const [listMonth, setListMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
+  const monthInputRef = useRef(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -113,14 +111,15 @@ function Dashboard() {
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 5px 0' }}>Dashboard</h1>
           <p style={{ color: '#64748b', margin: 0 }}>Welcome back, Iniyan! Here's what's happening today.</p>
         </div>
-        <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
-          <CalendarCheck size={18} color="#64748b" />
-          <span style={{ color: '#0f172a' }}>
+        <div onClick={() => monthInputRef.current?.showPicker()} style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+          <CalendarCheck size={18} color="#64748b" style={{ pointerEvents: 'none' }} />
+          <span style={{ color: '#0f172a', pointerEvents: 'none' }}>
             {new Date(listMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
-          <ChevronDown size={16} color="#64748b" style={{ marginLeft: '4px' }} />
+          <ChevronDown size={16} color="#64748b" style={{ marginLeft: '4px', pointerEvents: 'none' }} />
           <input 
             type="month" 
+            ref={monthInputRef}
             value={listMonth}
             onChange={(e) => setListMonth(e.target.value)}
             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
