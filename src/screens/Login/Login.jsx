@@ -24,7 +24,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
 
   // Keep backend URL consistent with Home.jsx
-  const API_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080") + "/api/Todo";
+  const API_URL = "https://employee-management-backend-rj6x.onrender.com/api/Todo";
 
   const handleLogin = async (e) => {
     e.preventDefault();
