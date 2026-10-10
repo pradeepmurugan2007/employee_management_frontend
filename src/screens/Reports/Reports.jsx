@@ -1,5 +1,5 @@
 import React from 'react';
-import axiosClient from '../../api/axiosClient'; from 'react';
+import axiosClient from '../../api/axiosClient';
 import { 
   Download, ChevronDown, CalendarDays, Search, Users, 
   CheckCircle2, XCircle, Clock, Plane, TrendingUp, Eye
@@ -308,7 +308,6 @@ function Reports() {
 
       {/* Charts Row */}
       {activeTab === 'Attendance Report' && (
-{/* Charts Row */}
       <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
         
         {/* Attendance Trend Chart */}
