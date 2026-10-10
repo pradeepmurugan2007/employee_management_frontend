@@ -14,7 +14,15 @@ import SettingsPage from "../Settings/Settings";
 
 function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
+  // Close sidebar on mobile when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (window.innerWidth <= 768) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -39,25 +47,25 @@ function Home() {
             <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#0d9488', letterSpacing: '-0.5px' }}>EmpLy</span>
           </a>
           <div className="sidebar-nav">
-            <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+            <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleTabChange('dashboard')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>home</span> Dashboard
             </div>
-            <div className={`nav-item ${activeTab === 'employees' ? 'active' : ''}`} onClick={() => setActiveTab('employees')}>
+            <div className={`nav-item ${activeTab === 'employees' ? 'active' : ''}`} onClick={() => handleTabChange('employees')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>group</span> Employees
             </div>
-            <div className={`nav-item ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => setActiveTab('attendance')}>
+            <div className={`nav-item ${activeTab === 'attendance' ? 'active' : ''}`} onClick={() => handleTabChange('attendance')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>event</span> Attendance
             </div>
-            <div className={`nav-item ${activeTab === 'leave_requests' ? 'active' : ''}`} onClick={() => setActiveTab('leave_requests')}>
+            <div className={`nav-item ${activeTab === 'leave_requests' ? 'active' : ''}`} onClick={() => handleTabChange('leave_requests')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>edit_calendar</span> Leave Requests
             </div>
-            <div className={`nav-item ${activeTab === 'departments' ? 'active' : ''}`} onClick={() => setActiveTab('departments')}>
+            <div className={`nav-item ${activeTab === 'departments' ? 'active' : ''}`} onClick={() => handleTabChange('departments')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>account_tree</span> Departments
             </div>
-            <div className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>
+            <div className={`nav-item ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => handleTabChange('reports')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>leaderboard</span> Reports
             </div>
-            <div className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+            <div className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => handleTabChange('settings')}>
               <span className="material-symbols-rounded" style={{ marginRight: '12px', fontSize: '20px' }}>settings</span> Settings
             </div>
           </div>
@@ -74,26 +82,28 @@ function Home() {
         </div>
       </aside>
 
+      <div className={`mobile-overlay ${isSidebarOpen ? 'visible' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
+      
       {/* Main Content Area */}
       <main className={`main-wrapper ${!isSidebarOpen ? 'sidebar-closed' : ''}`} style={{ backgroundColor: '#f8fafc' }}>
         <header className="topbar" style={{ backgroundColor: 'white', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 100 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
             <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#64748b' }} onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
               <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>menu</span>
             </div>
             <div className="search-box" style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 16px', display: 'flex', alignItems: 'center', width: '400px' }}>
               <span className="material-symbols-rounded" style={{ fontSize: '20px', color: '#64748b' }}>search</span>
-              <input type="text" placeholder="Search employees, departments, or anything..." style={{ border: 'none', outline: 'none', marginLeft: '10px', width: '100%', fontSize: '14px', color: '#0f172a' }} />
+              <input type="text" placeholder="Search..." style={{ border: 'none', outline: 'none', marginLeft: '10px', width: '100%', fontSize: '14px', color: '#0f172a' }} />
             </div>
           </div>
-          <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+          <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <div style={{ position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#64748b' }}>
               <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>notifications</span>
               <span style={{ position: 'absolute', top: '1px', right: '2px', backgroundColor: '#ef4444', width: '8px', height: '8px', borderRadius: '50%', border: '2px solid white' }}></span>
             </div>
             <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
               <img src="https://ui-avatars.com/api/?name=Iniyan+M&background=e2e8f0&color=0f172a" alt="User" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-              <div style={{ textAlign: 'left' }}>
+              <div className="user-info-text" style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Iniyan M</div>
                 <div style={{ fontSize: '12px', color: '#64748b' }}>Admin</div>
               </div>
