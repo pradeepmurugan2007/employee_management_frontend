@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings as SettingsIcon, CalendarDays, Clock, ShieldCheck, 
   Bell, Database, Upload, Info
 } from 'lucide-react';
 import logo from "../../assets/logo.svg";
 import CustomSelect from '../../components/CustomSelect';
+import { getSettings, updateSettings } from '../../api/settingsApi';
 
 function Settings() {
   const defaultSettings = {
@@ -30,26 +31,76 @@ function Settings() {
     rememberMeDuration: 7
   };
 
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('appSettings');
-    return saved ? JSON.parse(saved) : defaultSettings;
-  });
+  const [settings, setSettings] = useState(defaultSettings);
+  const [loading, setLoading] = useState(true);
+  
+  const [activeTab, setActiveTab] = useState('general');
+  const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await getSettings();
+      setSettings(data);
+    } catch (err) {
+      console.error("Failed to fetch settings", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (field, value) => {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = () => {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
-    alert('Settings saved successfully!');
-  };
-
-  const handleReset = () => {
-    if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
-      setSettings(defaultSettings);
-      localStorage.removeItem('appSettings');
+  const handleSave = async () => {
+    try {
+      const savedSettings = await updateSettings(settings);
+      setSettings(savedSettings);
+      localStorage.setItem('appSettings', JSON.stringify(savedSettings));
+      window.dispatchEvent(new Event('settingsUpdated'));
+      alert('Settings saved successfully!');
+    } catch (err) {
+      console.error("Failed to save settings", err);
+      alert('Failed to save settings');
     }
   };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Logo size must be less than 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleChange('companyLogo', reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleReset = async () => {
+    if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
+      try {
+        const resetSettings = await updateSettings(defaultSettings);
+        setSettings(resetSettings);
+        localStorage.setItem('appSettings', JSON.stringify(resetSettings));
+        window.dispatchEvent(new Event('settingsUpdated'));
+      } catch (err) {
+        console.error("Failed to reset settings", err);
+      }
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: '24px' }}>Loading settings...</div>;
+  }
 
   return (
     <div>
@@ -61,42 +112,63 @@ function Settings() {
 
       {/* Horizontal Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: '#eaf6f6', color: '#0d9488', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #0d9488', whiteSpace: 'nowrap' }}>
-          <SettingsIcon size={18} /> General
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          <CalendarDays size={18} /> Leave Settings
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          <Clock size={18} /> Attendance Settings
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          <ShieldCheck size={18} /> User Roles & Permissions
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          <Bell size={18} /> Notifications
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          <Database size={18} /> System
-        </div>
+        {[
+          { id: 'general', icon: SettingsIcon, label: 'General' },
+          { id: 'leave', icon: CalendarDays, label: 'Leave Settings' },
+          { id: 'attendance', icon: Clock, label: 'Attendance Settings' },
+          { id: 'roles', icon: ShieldCheck, label: 'User Roles & Permissions' },
+          { id: 'notifications', icon: Bell, label: 'Notifications' },
+          { id: 'system', icon: Database, label: 'System' }
+        ].map(tab => (
+          <div 
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', 
+              backgroundColor: activeTab === tab.id ? '#eaf6f6' : 'white', 
+              color: activeTab === tab.id ? '#0d9488' : '#64748b', 
+              borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', 
+              border: `1px solid ${activeTab === tab.id ? '#0d9488' : '#e2e8f0'}`, 
+              whiteSpace: 'nowrap' 
+            }}
+          >
+            <tab.icon size={18} /> {tab.label}
+          </div>
+        ))}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '24px' }}>
         
-        {/* Company Information */}
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+        {activeTab === 'general' && (
+          <>
+            {/* Company Information */}
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 5px 0' }}>Company Information</h3>
           <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px 0' }}>Update your organization details</p>
           
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            {/* Logo Box */}
-            <div style={{ width: '160px', height: '180px', border: '1px dashed #cbd5e1', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
-              <img src={logo} alt="Company Logo" style={{ width: '80px', height: '80px', marginBottom: '16px' }} />
-              <button style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
-                <Upload size={14} /> Change Logo
-              </button>
-              <p style={{ color: '#94a3b8', fontSize: '11px', margin: '8px 0 0 0' }}>JPG, PNG (Max 2MB)</p>
-            </div>
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+              {/* Logo Box */}
+              <div style={{ width: '160px', height: '190px', border: '1px dashed #cbd5e1', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box', overflow: 'hidden' }}>
+                <img src={settings.companyLogo || logo} alt="Company Logo" style={{ width: '80px', height: '80px', marginBottom: '16px', objectFit: 'contain' }} />
+                <input 
+                  type="file" 
+                  accept="image/png, image/jpeg" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  onChange={handleLogoUpload}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                  <button onClick={() => fileInputRef.current?.click()} style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                    <Upload size={14} /> Change
+                  </button>
+                  {settings.companyLogo && (
+                    <button onClick={() => handleChange('companyLogo', null)} style={{ backgroundColor: 'white', color: '#ef4444', border: '1px solid #ef4444', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                      Reset Default
+                    </button>
+                  )}
+                </div>
+                {!settings.companyLogo && <p style={{ color: '#94a3b8', fontSize: '11px', margin: '8px 0 0 0' }}>JPG, PNG (Max 2MB)</p>}
+              </div>
 
             {/* Inputs */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minWidth: '250px' }}>
@@ -226,10 +298,14 @@ function Settings() {
             <button onClick={handleSave} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
               Save Changes
             </button>
+            </div>
           </div>
-        </div>
+        </>
+      )}
 
-        {/* Password Policy */}
+        {activeTab === 'system' && (
+          <>
+            {/* Password Policy */}
         <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
           <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 5px 0' }}>Password Policy</h3>
           <p style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px 0' }}>Set password requirements for all users</p>
@@ -300,6 +376,16 @@ function Settings() {
             </div>
           </div>
         </div>
+      </>
+    )}
+
+        {/* Fallback for other tabs */}
+        {['leave', 'attendance', 'roles', 'notifications'].includes(activeTab) && (
+          <div style={{ gridColumn: '1 / -1', backgroundColor: 'white', borderRadius: '12px', padding: '40px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>Coming Soon</h3>
+            <p style={{ color: '#64748b' }}>The settings for this section will be available in a future update.</p>
+          </div>
+        )}
 
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import logo from "../../assets/logo.svg";
@@ -19,6 +19,20 @@ function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [appSettings, setAppSettings] = useState(() => {
+    const saved = localStorage.getItem('appSettings');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  useEffect(() => {
+    const handleSettingsUpdate = () => {
+      const saved = localStorage.getItem('appSettings');
+      if (saved) setAppSettings(JSON.parse(saved));
+    };
+    window.addEventListener('settingsUpdated', handleSettingsUpdate);
+    return () => window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+  }, []);
 
   // Close sidebar on mobile when tab changes
   const handleTabChange = (tab) => {
@@ -59,8 +73,8 @@ function Home() {
       <aside className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           <a href="#" className="sidebar-logo" style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-            <img src={logo} alt="EmpLy Logo" style={{ width: '64px', height: '64px', marginRight: '8px' }} />
-            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#0d9488', letterSpacing: '-0.5px' }}>EmpLy</span>
+            <img src={appSettings?.companyLogo || logo} alt="EmpLy Logo" style={{ width: '48px', height: '48px', marginRight: '12px', objectFit: 'contain' }} />
+            <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#0d9488', letterSpacing: '-0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appSettings?.companyName || 'EmpLy'}</span>
           </a>
           <div className="sidebar-nav">
             <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleTabChange('dashboard')}>
