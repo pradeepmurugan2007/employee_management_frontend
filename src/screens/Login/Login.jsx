@@ -41,7 +41,7 @@ function Login() {
       }
     } catch (error) {
       console.error(error);
-      alert("Backend Error - Make sure your Spring Boot server is running on port 8080");
+      alert("Backend Error: " + (error.response?.data?.message || error.message || "Could not connect to server"));
     } finally {
       setLoading(false);
     }
