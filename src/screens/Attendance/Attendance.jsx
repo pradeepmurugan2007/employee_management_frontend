@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Plus, Search, ChevronDown, Filter, Paperclip, Clock,
   ChevronLeft, ChevronRight, UserCheck, UserX, Clock4, CalendarX2,
-  TrendingUp, TrendingDown, CalendarDays, X, MapPin, 
+  TrendingUp, TrendingDown, CalendarDays, X, MapPin,
   LogOut, Briefcase, Home as HomeIcon, CheckCircle2, Crosshair, Map, RefreshCw
 } from 'lucide-react';
-import { getAttendance, getAttendanceSummary } from '../../api/attendanceApi';
+import { getAttendance, getAttendanceSummary, markAttendance } from '../../api/attendanceApi';
 
 function Attendance() {
   const [records, setRecords] = useState([]);
@@ -19,6 +19,7 @@ function Attendance() {
   const [dateView, setDateView] = useState('month'); // 'month' or 'date'
   const [selectedMonth, setSelectedMonth] = useState('Oct');
   const [selectedDate, setSelectedDate] = useState(10);
+  const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
 
   const fetchAttendanceData = async () => {
     setLoading(true);
@@ -38,13 +39,37 @@ function Attendance() {
     }
   };
 
+  const handleSaveAttendance = async () => {
+    try {
+      // Create ISO timestamp using the selected time for today
+      const today = new Date();
+      const [hours, minutes] = selectedTime.split(':');
+      today.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+
+      const payload = {
+        employeeId: 1, // hardcoded for now until auth context is added
+        employeeName: "Iniyan",
+        attendanceType: "CHECK_IN", // You would get this from state in a full implementation
+        checkInAt: today.toISOString(),
+        status: "PRESENT",
+        remarks: "Marked from Dashboard"
+      };
+      await markAttendance(payload);
+      setIsMarkingAttendance(false);
+      fetchAttendanceData();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to mark attendance: " + (err.response?.data || err.message));
+    }
+  };
+
   useEffect(() => {
     fetchAttendanceData();
   }, []);
 
   const getStatusColor = (status) => {
     if (!status) return '#f1f5f9';
-    switch(status.toUpperCase()) {
+    switch (status.toUpperCase()) {
       case 'PRESENT': return '#dcfce7';
       case 'ABSENT': return '#fee2e2';
       case 'LATE': return '#fef3c7';
@@ -55,7 +80,7 @@ function Attendance() {
 
   const getStatusTextColor = (status) => {
     if (!status) return '#64748b';
-    switch(status.toUpperCase()) {
+    switch (status.toUpperCase()) {
       case 'PRESENT': return '#16a34a';
       case 'ABSENT': return '#dc2626';
       case 'LATE': return '#d97706';
@@ -64,7 +89,7 @@ function Attendance() {
     }
   };
 
-  const filteredRecords = records.filter(record => 
+  const filteredRecords = records.filter(record =>
     (record.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -82,7 +107,7 @@ function Attendance() {
             October 2026
             <ChevronDown size={16} color="#64748b" />
           </div>
-          <button 
+          <button
             onClick={() => setIsMarkingAttendance(true)}
             style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '15px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
             <Plus size={18} />
@@ -100,7 +125,7 @@ function Attendance() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
               <h2 style={{ fontSize: '28px', margin: 0, color: '#0f172a' }}>{summary?.present || 0}</h2>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={12} style={{marginRight: '2px'}}/> +5%</span>
+                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={12} style={{ marginRight: '2px' }} /> +5%</span>
                 <span style={{ color: '#94a3b8', fontSize: '10px' }}>vs yesterday</span>
               </div>
             </div>
@@ -114,7 +139,7 @@ function Attendance() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
               <h2 style={{ fontSize: '28px', margin: 0, color: '#0f172a' }}>{summary?.absent || 0}</h2>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={12} style={{marginRight: '2px'}}/> +2%</span>
+                <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingUp size={12} style={{ marginRight: '2px' }} /> +2%</span>
                 <span style={{ color: '#94a3b8', fontSize: '10px' }}>vs yesterday</span>
               </div>
             </div>
@@ -128,7 +153,7 @@ function Attendance() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
               <h2 style={{ fontSize: '28px', margin: 0, color: '#0f172a' }}>{summary?.late || 0}</h2>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingDown size={12} style={{marginRight: '2px'}}/> -3%</span>
+                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingDown size={12} style={{ marginRight: '2px' }} /> -3%</span>
                 <span style={{ color: '#94a3b8', fontSize: '10px' }}>vs yesterday</span>
               </div>
             </div>
@@ -142,7 +167,7 @@ function Attendance() {
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px' }}>
               <h2 style={{ fontSize: '28px', margin: 0, color: '#0f172a' }}>{summary?.onLeave || 0}</h2>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingDown size={12} style={{marginRight: '2px'}}/> -1%</span>
+                <span style={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}><TrendingDown size={12} style={{ marginRight: '2px' }} /> -1%</span>
                 <span style={{ color: '#94a3b8', fontSize: '10px' }}>vs yesterday</span>
               </div>
             </div>
@@ -152,16 +177,16 @@ function Attendance() {
 
       {/* Main Table Card */}
       <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-        
+
         {/* Filters and Search */}
         <div className="actions-bar" style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
           <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
             <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
               <Search size={18} />
             </div>
-            <input 
-              type="text" 
-              placeholder="Search by name..." 
+            <input
+              type="text"
+              placeholder="Search by name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
@@ -209,71 +234,73 @@ function Attendance() {
 
         {/* Table */}
         {!loading && !error && (
-        <>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '800px' }}>
-            <thead>
-              <tr style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontWeight: 'bold' }}>
-                <th style={{ padding: '16px 8px', width: '40px' }}>#</th>
-                <th style={{ padding: '16px 8px' }}>Employee</th>
-                <th style={{ padding: '16px 8px' }}>Department</th>
-                <th style={{ padding: '16px 8px' }}>Date</th>
-                <th style={{ padding: '16px 8px' }}>Check In</th>
-                <th style={{ padding: '16px 8px' }}>Check Out</th>
-                <th style={{ padding: '16px 8px' }}>Total Hours</th>
-                <th style={{ padding: '16px 8px' }}>Status</th>
-                <th style={{ padding: '16px 8px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
-                    No attendance records found.
-                  </td>
-                </tr>
-              ) : (
-                filteredRecords.map((record, idx) => (
-                  <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{idx + 1}</td>
-                    <td style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(record.employeeName || 'User')}&background=e2e8f0&color=0f172a`} alt={record.employeeName} style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px' }}>{record.employeeName}</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px 8px', color: '#64748b' }}>-</td>
-                    <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.date}</td>
-                    <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkInTime || '-'}</td>
-                    <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkOutTime || '-'}</td>
-                    <td style={{ padding: '16px 8px', color: '#64748b' }}>-</td>
-                    <td style={{ padding: '16px 8px' }}>
-                      <span style={{ backgroundColor: getStatusColor(record.status), color: getStatusTextColor(record.status), padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', display: 'inline-block' }}>{record.status}</span>
-                    </td>
-                    <td style={{ padding: '16px 8px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', color: '#64748b' }}>
-                        <div style={{ cursor: 'pointer', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
-                          <Paperclip size={16} />
-                        </div>
-                        <div style={{ cursor: 'pointer', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
-                          <Clock size={16} />
-                        </div>
-                      </div>
-                    </td>
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '800px' }}>
+                <thead>
+                  <tr style={{ color: '#0f172a', borderBottom: '1px solid #e2e8f0', textAlign: 'left', fontWeight: 'bold' }}>
+                    <th style={{ padding: '16px 8px', width: '40px' }}>#</th>
+                    <th style={{ padding: '16px 8px' }}>Employee</th>
+                    <th style={{ padding: '16px 8px' }}>Department</th>
+                    <th style={{ padding: '16px 8px' }}>Date</th>
+                    <th style={{ padding: '16px 8px' }}>Check In</th>
+                    <th style={{ padding: '16px 8px' }}>Check Out</th>
+                    <th style={{ padding: '16px 8px' }}>Total Hours</th>
+                    <th style={{ padding: '16px 8px' }}>Status</th>
+                    <th style={{ padding: '16px 8px', textAlign: 'center' }}>Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {filteredRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
+                        No attendance records found.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRecords.map((record, idx) => (
+                      <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{idx + 1}</td>
+                        <td style={{ padding: '16px 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(record.employeeName || 'User')}&background=e2e8f0&color=0f172a`} alt={record.employeeName} style={{ width: '36px', height: '36px', borderRadius: '50%' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ color: '#0f172a', fontWeight: '500', fontSize: '14px' }}>{record.employeeName}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.departmentName || '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.workDate}</td>
+                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkInAt ? new Date(record.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkOutAt ? new Date(record.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.workingHours || '-'}</td>
+                        <td style={{ padding: '16px 8px' }}>
+                          <span style={{ backgroundColor: getStatusColor(record.status), color: getStatusTextColor(record.status), padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
+                            {record.status || 'UNKNOWN'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 8px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', color: '#64748b' }}>
+                            <div style={{ cursor: 'pointer', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                              <Paperclip size={16} />
+                            </div>
+                            <div style={{ cursor: 'pointer', padding: '4px', border: '1px solid #e2e8f0', borderRadius: '4px' }}>
+                              <Clock size={16} />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Pagination Footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '16px', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid #f1f5f9' }}>
-          <div style={{ color: '#64748b', fontSize: '14px' }}>
-            Showing {filteredRecords.length} of {records.length} records
-          </div>
-        </div>
-        </>
+            {/* Pagination Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '16px', flexWrap: 'wrap', gap: '16px', borderTop: '1px solid #f1f5f9' }}>
+              <div style={{ color: '#64748b', fontSize: '14px' }}>
+                Showing {filteredRecords.length} of {records.length} records
+              </div>
+            </div>
+          </>
         )}
 
       </div>
@@ -282,7 +309,7 @@ function Attendance() {
       {isMarkingAttendance && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div style={{ backgroundColor: 'white', borderRadius: '12px', width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            
+
             {/* Modal Header */}
             <div style={{ padding: '24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -296,7 +323,7 @@ function Attendance() {
 
             {/* Modal Body */}
             <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              
+
               {/* Attendance Type */}
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '12px' }}>Attendance Type <span style={{ color: '#ef4444' }}>*</span></label>
@@ -326,13 +353,13 @@ function Attendance() {
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Date <span style={{ color: '#ef4444' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <CalendarDays size={18} color="#94a3b8" style={{ position: 'absolute', top: '10px', left: '12px', pointerEvents: 'none' }} />
-                    <div 
+                    <div
                       onClick={() => setShowDatePicker(!showDatePicker)}
                       style={{ width: '100%', padding: '10px 36px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: '#f8fafc', boxSizing: 'border-box', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
                       {selectedDate} {selectedMonth} 2026
                     </div>
                     <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', top: '12px', right: '12px', pointerEvents: 'none' }} />
-                    
+
                     {/* DatePicker Popup */}
                     {showDatePicker && (
                       <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', zIndex: 10, width: '280px' }}>
@@ -345,9 +372,9 @@ function Attendance() {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                               {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
-                                <div 
-                                  key={m} 
-                                  onClick={() => { setSelectedMonth(m); setDateView('date'); }} 
+                                <div
+                                  key={m}
+                                  onClick={() => { setSelectedMonth(m); setDateView('date'); }}
                                   style={{ padding: '8px 0', textAlign: 'center', fontSize: '13px', cursor: 'pointer', borderRadius: '6px', border: m === selectedMonth ? '1px solid #0d9488' : '1px solid #e2e8f0', color: m === selectedMonth ? '#0d9488' : '#475569', backgroundColor: m === selectedMonth ? '#f0fdfa' : 'white', fontWeight: m === selectedMonth ? '600' : '400' }}>
                                   {m}
                                 </div>
@@ -365,16 +392,16 @@ function Attendance() {
                               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '12px', color: '#64748b', fontWeight: '500' }}>{d}</div>)}
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                              {[27, 28, 29, 30].map(d => <div key={'prev'+d} style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', color: '#cbd5e1' }}>{d}</div>)}
-                              {Array.from({length: 31}, (_, i) => i + 1).map(d => (
-                                <div 
-                                  key={d} 
-                                  onClick={() => { setSelectedDate(d); setShowDatePicker(false); }} 
+                              {[27, 28, 29, 30].map(d => <div key={'prev' + d} style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', color: '#cbd5e1' }}>{d}</div>)}
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                                <div
+                                  key={d}
+                                  onClick={() => { setSelectedDate(d); setShowDatePicker(false); }}
                                   style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', cursor: 'pointer', borderRadius: '50%', backgroundColor: d === selectedDate ? '#0d9488' : 'transparent', color: d === selectedDate ? 'white' : '#334155', fontWeight: d === selectedDate ? '600' : '400' }}>
                                   {d}
                                 </div>
                               ))}
-                              {[1, 2, 3].map(d => <div key={'next'+d} style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', color: '#cbd5e1' }}>{d}</div>)}
+                              {[1, 2, 3].map(d => <div key={'next' + d} style={{ textAlign: 'center', padding: '6px 0', fontSize: '13px', color: '#cbd5e1' }}>{d}</div>)}
                             </div>
                           </>
                         )}
@@ -386,9 +413,12 @@ function Attendance() {
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Time <span style={{ color: '#ef4444' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
                     <Clock size={18} color="#94a3b8" style={{ position: 'absolute', top: '10px', left: '12px', pointerEvents: 'none' }} />
-                    <div style={{ width: '100%', padding: '10px 36px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: '#f8fafc', boxSizing: 'border-box', display: 'flex', alignItems: 'center' }}>
-                      09:15 AM
-                    </div>
+                    <input
+                      type="time"
+                      style={{ width: '100%', padding: '10px 36px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: 'white', boxSizing: 'border-box', display: 'flex', alignItems: 'center', outline: 'none' }}
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                    />
                     <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', top: '12px', right: '12px', pointerEvents: 'none' }} />
                   </div>
                 </div>
@@ -402,7 +432,7 @@ function Attendance() {
                     <MapPin size={20} color="#0d9488" fill="currentColor" style={{ color: 'white', marginTop: '2px' }} />
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>Current Location</div>
-                      <div style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>123, Business Park, Avinashi Road,<br/>Coimbatore, Tamil Nadu - 641001</div>
+                      <div style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>123, Business Park, Avinashi Road,<br />Coimbatore, Tamil Nadu - 641001</div>
                     </div>
                   </div>
                   <div style={{ width: '200px', backgroundColor: '#e2e8f0', position: 'relative', overflow: 'hidden', backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '20px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -433,7 +463,7 @@ function Attendance() {
               <button onClick={() => setIsMarkingAttendance(false)} style={{ backgroundColor: 'white', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
                 Cancel
               </button>
-              <button onClick={() => setIsMarkingAttendance(false)} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+              <button onClick={handleSaveAttendance} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
                 Save Attendance
               </button>
             </div>

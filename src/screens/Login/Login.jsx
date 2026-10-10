@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import logo from "../../assets/logo.svg";
 
 function Login() {
@@ -22,6 +23,11 @@ function Login() {
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
+
+  // Password visibility states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showVerifyPassword, setShowVerifyPassword] = useState(false);
 
   // Keep backend URL consistent with Home.jsx
   const API_URL = "https://employee-management-backend-rj6x.onrender.com/api/Todo";
@@ -129,14 +135,23 @@ function Login() {
 
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className="form-input"
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      style={{ paddingRight: "40px" }}
+                    />
+                    <div 
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="form-options">
@@ -178,26 +193,44 @@ function Login() {
 
                 <div className="form-group">
                   <label className="form-label">Password</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="Create a password"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                    required
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showSignupPassword ? "text" : "password"}
+                      className="form-input"
+                      placeholder="Create a password"
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      required
+                      style={{ paddingRight: "40px" }}
+                    />
+                    <div 
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                    >
+                      {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">Verify Password</label>
-                  <input
-                    type="password"
-                    className="form-input"
-                    placeholder="Confirm your password"
-                    value={verifyPassword}
-                    onChange={(e) => setVerifyPassword(e.target.value)}
-                    required
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showVerifyPassword ? "text" : "password"}
+                      className="form-input"
+                      placeholder="Confirm your password"
+                      value={verifyPassword}
+                      onChange={(e) => setVerifyPassword(e.target.value)}
+                      required
+                      style={{ paddingRight: "40px" }}
+                    />
+                    <div 
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
+                      onClick={() => setShowVerifyPassword(!showVerifyPassword)}
+                    >
+                      {showVerifyPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </div>
+                  </div>
                 </div>
 
                 <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '15px' }}>
