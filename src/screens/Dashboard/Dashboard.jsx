@@ -59,11 +59,25 @@ function Dashboard() {
       setRecentEmployees(empRes.data);
       setPendingLeavesList(leaveRes.data);
       
-      const depts = Object.entries(deptRes.data).map(([name, value], idx) => ({
-        name,
-        value,
-        color: CHART_COLORS[idx % CHART_COLORS.length]
-      }));
+      let depts = [];
+      if (Array.isArray(deptRes.data)) {
+        // Fallback if backend still returns an array of Department objects
+        depts = deptRes.data.map((d, idx) => ({
+          name: d.name || d.departmentName || 'Unknown',
+          value: d.employeeCount || 1, // Fallback to 1 so it renders
+          color: CHART_COLORS[idx % CHART_COLORS.length]
+        }));
+      } else if (deptRes.data && typeof deptRes.data === 'object') {
+        depts = Object.entries(deptRes.data).map(([name, value], idx) => ({
+          name,
+          value: typeof value === 'number' ? value : 1,
+          color: CHART_COLORS[idx % CHART_COLORS.length]
+        }));
+      }
+
+      if (depts.length === 0) {
+        depts = [{ name: 'No Data', value: 1, color: '#e2e8f0' }];
+      }
       setDeptStats(depts);
 
       const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -77,6 +91,9 @@ function Dashboard() {
           absent: attData.absent || 0
         };
       });
+      if (chartData.length === 0) {
+        chartData.push({ name: 'No Data', present: 0, absent: 0 });
+      }
       setAttendanceChart(chartData);
     } catch (err) {
       console.error(err);
