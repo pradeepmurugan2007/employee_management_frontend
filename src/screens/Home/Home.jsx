@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosClient from "../../api/axiosClient";
 import logo from "../../assets/logo.svg";
 import { 
   ChevronDown, HeadphonesIcon, User as UserIcon, Settings as SettingsIcon, LogOut as LogOutIcon
@@ -45,7 +45,7 @@ function Home() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('https://employee-management-backend-rj6x.onrender.com/api/Todo/logout');
+      await axiosClient.post('/api/Todo/logout');
     } catch (e) {
       console.error(e);
     }
