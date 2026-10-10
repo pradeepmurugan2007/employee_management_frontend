@@ -4,8 +4,14 @@ import Home from "./screens/Home/Home"
 
 import {
   Routes,
-  Route
+  Route,
+  Navigate
 } from "react-router-dom"
+
+const AuthGuard = ({ children }) => {
+  const token = localStorage.getItem("authToken");
+  return token ? children : <Navigate to="/" />;
+};
 
 function App() {
 
@@ -18,7 +24,11 @@ function App() {
       
       <Route
         path="/home"
-        element={<Home />}
+        element={
+          <AuthGuard>
+            <Home />
+          </AuthGuard>
+        }
       />
     </Routes>
   )

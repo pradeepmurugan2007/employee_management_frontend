@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Search, 
-  ChevronDown, 
   Filter, 
   Edit2, 
   Trash2,
@@ -12,6 +11,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import AddEmployee from './AddEmployee';
+import CustomSelect from '../../components/CustomSelect';
 import { getEmployees, deleteEmployee, updateEmployeeStatus } from '../../api/employeeApi';
 
 function Employees() {
@@ -127,15 +127,15 @@ function Employees() {
               style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', outline: 'none', backgroundColor: 'white' }}
-          >
-            <option value="">All Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
+            onChange={(val) => setStatusFilter(val)}
+            placeholder="All Status"
+            options={[
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Inactive', value: 'INACTIVE' }
+            ]}
+          />
           <button
             onClick={fetchEmployees}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', backgroundColor: 'white' }}

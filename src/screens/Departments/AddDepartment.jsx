@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Building2, Save } from 'lucide-react';
 import { createDepartment } from '../../api/departmentApi';
+import CustomSelect from '../../components/CustomSelect';
 
 const STANDARD_DEPARTMENTS = [
   { name: "Software Development", code: "DEV" },
@@ -128,12 +129,14 @@ function AddDepartment({ onBack, onSaveSuccess }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department Name <span style={{ color: '#ef4444' }}>*</span></label>
-                <select name="name" value={formData.name} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: 'white' }}>
-                  <option value="">Select a Department</option>
-                  {STANDARD_DEPARTMENTS.map(dept => (
-                    <option key={dept.code} value={dept.name}>{dept.name}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  placeholder="Select a Department"
+                  options={STANDARD_DEPARTMENTS.map(dept => ({ label: dept.name, value: dept.name }))}
+                  width="100%"
+                />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department Code <span style={{ color: '#ef4444' }}>*</span></label>
@@ -149,10 +152,17 @@ function AddDepartment({ onBack, onSaveSuccess }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Status <span style={{ color: '#ef4444' }}>*</span></label>
-                <select name="status" value={formData.status} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                </select>
+                <CustomSelect
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  placeholder="Select Status"
+                  options={[
+                    { label: 'Active', value: 'ACTIVE' },
+                    { label: 'Inactive', value: 'INACTIVE' }
+                  ]}
+                  width="100%"
+                />
               </div>
             </div>
           </div>

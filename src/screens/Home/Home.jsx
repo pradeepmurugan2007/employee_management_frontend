@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import logo from "../../assets/logo.svg";
 import { 
-  ChevronDown, HeadphonesIcon
+  ChevronDown, HeadphonesIcon, User as UserIcon, Settings as SettingsIcon, LogOut as LogOutIcon
 } from "lucide-react";
 
 import Dashboard from "../Dashboard/Dashboard";
@@ -15,6 +17,8 @@ import SettingsPage from "../Settings/Settings";
 function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Close sidebar on mobile when tab changes
   const handleTabChange = (tab) => {
@@ -22,6 +26,18 @@ function Home() {
     if (window.innerWidth <= 768) {
       setIsSidebarOpen(false);
     }
+    setIsProfileDropdownOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('https://employee-management-backend-rj6x.onrender.com/api/Todo/logout');
+    } catch (e) {
+      console.error(e);
+    }
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    navigate("/");
   };
 
   const renderContent = () => {
@@ -101,13 +117,49 @@ function Home() {
               <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>notifications</span>
               <span style={{ position: 'absolute', top: '1px', right: '2px', backgroundColor: '#ef4444', width: '8px', height: '8px', borderRadius: '50%', border: '2px solid white' }}></span>
             </div>
-            <div className="user-profile" style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-              <img src="https://ui-avatars.com/api/?name=Iniyan+M&background=e2e8f0&color=0f172a" alt="User" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
-              <div className="user-info-text" style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Iniyan M</div>
-                <div style={{ fontSize: '12px', color: '#64748b' }}>Admin</div>
+            <div style={{ position: 'relative' }}>
+              <div 
+                className="user-profile" 
+                style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', border: isProfileDropdownOpen ? '1px solid #e2e8f0' : '1px solid transparent', backgroundColor: isProfileDropdownOpen ? '#f8fafc' : 'transparent' }}
+                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+              >
+                <img src="https://ui-avatars.com/api/?name=Iniyan+M&background=e2e8f0&color=0f172a" alt="User" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                <div className="user-info-text" style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Iniyan M</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Admin</div>
+                </div>
+                <ChevronDown size={16} color="#64748b" style={{ transform: isProfileDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
               </div>
-              <ChevronDown size={16} color="#64748b" />
+
+              {isProfileDropdownOpen && (
+                <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)', width: '220px', zIndex: 1000, border: '1px solid #e2e8f0', padding: '8px 0' }}>
+                  <div style={{ padding: '8px 16px 12px 16px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #f1f5f9', marginBottom: '8px' }}>
+                    <img src="https://ui-avatars.com/api/?name=Iniyan+M&background=e2e8f0&color=0f172a" alt="User" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>Iniyan M</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>Admin</div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#475569', fontSize: '14px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                    <UserIcon size={16} /> My Profile
+                  </div>
+                  <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', color: '#475569', fontSize: '14px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'} onClick={() => handleTabChange('settings')}>
+                    <SettingsIcon size={16} /> Settings
+                  </div>
+                  
+                  <div style={{ padding: '8px 16px', marginTop: '4px' }}>
+                    <div 
+                      onClick={handleLogout} 
+                      style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '10px 16px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '500', transition: 'background-color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fecaca'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                    >
+                      <LogOutIcon size={18} /> Logout
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>

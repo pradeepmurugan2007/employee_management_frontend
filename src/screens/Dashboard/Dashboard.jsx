@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { getDashboardSummary, getRecentEmployees, getPendingLeaves, getDepartmentStats } from '../../api/dashboardApi';
 import { getAttendanceSummary } from '../../api/attendanceApi';
 import { makeLeaveDecision } from '../../api/leaveApi';
+import CustomSelect from '../../components/CustomSelect';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -58,6 +59,8 @@ function Dashboard() {
   const [pendingLeavesList, setPendingLeavesList] = useState([]);
   const [deptStats, setDeptStats] = useState([]);
   const [attendanceChart, setAttendanceChart] = useState([]);
+  const [attendanceFilter, setAttendanceFilter] = useState('This Week');
+  const [departmentFilter, setDepartmentFilter] = useState('');
   const [listMonth, setListMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -233,9 +236,17 @@ function Dashboard() {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Attendance Overview</h3>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 12px', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer' }}>
-              This Week <ChevronDown size={14} />
-            </div>
+            <CustomSelect 
+              value={attendanceFilter} 
+              onChange={setAttendanceFilter}
+              options={[
+                { value: 'Today', label: 'Today' },
+                { value: 'This Week', label: 'This Week' },
+                { value: 'This Month', label: 'This Month' }
+              ]}
+              placeholder="Select Period"
+              width="140px"
+            />
           </div>
           <div style={{ height: '250px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -254,9 +265,13 @@ function Dashboard() {
         <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Department Overview</h3>
-            <div style={{ border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px 12px', fontSize: '13px', display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer' }}>
-              All Departments <ChevronDown size={14} />
-            </div>
+            <CustomSelect 
+              value={departmentFilter} 
+              onChange={setDepartmentFilter}
+              options={deptStats.map(d => ({ label: d.name, value: d.name }))}
+              placeholder="All Departments"
+              width="180px"
+            />
           </div>
           <div className="department-overview-content" style={{ height: '250px' }}>
             <div style={{ flex: '1', height: '100%', position: 'relative', minHeight: '150px' }}>

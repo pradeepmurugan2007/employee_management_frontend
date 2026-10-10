@@ -4,6 +4,7 @@ import {
   Bell, Database, Upload, Info
 } from 'lucide-react';
 import logo from "../../assets/logo.svg";
+import CustomSelect from '../../components/CustomSelect';
 
 function Settings() {
   const defaultSettings = {
@@ -137,35 +138,59 @@ function Settings() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Date Format <span style={{ color: '#ef4444' }}>*</span></label>
-              <select value={settings.dateFormat} onChange={e => handleChange('dateFormat', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                <option>dd/mm/yyyy</option>
-                <option>mm/dd/yyyy</option>
-                <option>yyyy-mm-dd</option>
-              </select>
+              <CustomSelect
+                value={settings.dateFormat}
+                onChange={val => handleChange('dateFormat', val)}
+                placeholder="Select Date Format"
+                options={[
+                  { label: 'dd/mm/yyyy', value: 'dd/mm/yyyy' },
+                  { label: 'mm/dd/yyyy', value: 'mm/dd/yyyy' },
+                  { label: 'yyyy-mm-dd', value: 'yyyy-mm-dd' }
+                ]}
+                width="100%"
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Time Format <span style={{ color: '#ef4444' }}>*</span></label>
-              <select value={settings.timeFormat} onChange={e => handleChange('timeFormat', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                <option>12 Hour (AM/PM)</option>
-                <option>24 Hour</option>
-              </select>
+              <CustomSelect
+                value={settings.timeFormat}
+                onChange={val => handleChange('timeFormat', val)}
+                placeholder="Select Time Format"
+                options={[
+                  { label: '12 Hour (AM/PM)', value: '12 Hour (AM/PM)' },
+                  { label: '24 Hour', value: '24 Hour' }
+                ]}
+                width="100%"
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Default Language <span style={{ color: '#ef4444' }}>*</span></label>
-              <select value={settings.language} onChange={e => handleChange('language', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                <option>English</option>
-                <option>Spanish</option>
-                <option>French</option>
-              </select>
+              <CustomSelect
+                value={settings.language}
+                onChange={val => handleChange('language', val)}
+                placeholder="Select Language"
+                options={[
+                  { label: 'English', value: 'English' },
+                  { label: 'Spanish', value: 'Spanish' },
+                  { label: 'French', value: 'French' }
+                ]}
+                width="100%"
+              />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Items Per Page</label>
-              <select value={settings.itemsPerPage} onChange={e => handleChange('itemsPerPage', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                <option>10</option>
-                <option>25</option>
-                <option>50</option>
-                <option>100</option>
-              </select>
+              <CustomSelect
+                value={settings.itemsPerPage}
+                onChange={val => handleChange('itemsPerPage', val)}
+                placeholder="Items Per Page"
+                options={[
+                  { label: '10', value: '10' },
+                  { label: '25', value: '25' },
+                  { label: '50', value: '50' },
+                  { label: '100', value: '100' }
+                ]}
+                width="100%"
+              />
             </div>
           </div>
 

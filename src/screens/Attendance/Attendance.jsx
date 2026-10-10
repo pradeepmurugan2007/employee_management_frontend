@@ -67,7 +67,21 @@ function Attendance() {
   const [dateView, setDateView] = useState('month'); // 'month' or 'date'
   const [selectedMonth, setSelectedMonth] = useState('Oct');
   const [selectedDate, setSelectedDate] = useState(10);
-  const [selectedTime, setSelectedTime] = useState(new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }));
+
+  const getISTDate = () => {
+    const d = new Date();
+    const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+    return new Date(utc + (3600000 * 5.5));
+  };
+
+  const [attendanceType, setAttendanceType] = useState('CHECK_IN');
+  
+  const [timeHour, setTimeHour] = useState(() => {
+    let h = getISTDate().getHours();
+    return h % 12 === 0 ? '12' : String(h % 12).padStart(2, '0');
+  });
+  const [timeMinute, setTimeMinute] = useState(() => String(getISTDate().getMinutes()).padStart(2, '0'));
+  const [timeAmPm, setTimeAmPm] = useState(() => getISTDate().getHours() >= 12 ? 'PM' : 'AM');
 
   const [listMonth, setListMonth] = useState(() => {
     const d = new Date();
@@ -103,16 +117,19 @@ function Attendance() {
 
   const handleSaveAttendance = async () => {
     try {
-      // Create ISO timestamp using the selected time for today
-      const today = new Date();
-      const [hours, minutes] = selectedTime.split(':');
-      today.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
+      const today = getISTDate();
+      let hours = parseInt(timeHour, 10);
+      if (timeAmPm === 'PM' && hours < 12) hours += 12;
+      if (timeAmPm === 'AM' && hours === 12) hours = 0;
+      
+      today.setHours(hours, parseInt(timeMinute, 10), 0, 0);
 
       const payload = {
         employeeId: 1, // hardcoded for now until auth context is added
         employeeName: "Iniyan",
-        attendanceType: "CHECK_IN", // You would get this from state in a full implementation
-        checkInAt: today.toISOString(),
+        attendanceType: attendanceType,
+        checkInAt: attendanceType === 'CHECK_IN' ? today.toISOString() : null,
+        checkOutAt: attendanceType === 'CHECK_OUT' ? today.toISOString() : null,
         status: "PRESENT",
         remarks: "Marked from Dashboard"
       };
@@ -434,22 +451,39 @@ function Attendance() {
               <div>
                 <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '12px' }}>Attendance Type <span style={{ color: '#ef4444' }}>*</span></label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                  <div style={{ border: '2px solid #0d9488', backgroundColor: '#f0fdfa', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <CheckCircle2 size={20} color="#0d9488" fill="currentColor" style={{ color: 'white' }} />
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#0d9488' }}>Check In</span>
+                  
+                  <div 
+                    onClick={() => setAttendanceType('CHECK_IN')}
+                    style={{ border: attendanceType === 'CHECK_IN' ? '2px solid #0d9488' : '1px solid #e2e8f0', backgroundColor: attendanceType === 'CHECK_IN' ? '#f0fdfa' : 'white', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxSizing: 'border-box' }}
+                  >
+                    <CheckCircle2 size={20} color={attendanceType === 'CHECK_IN' ? "#0d9488" : "#94a3b8"} fill={attendanceType === 'CHECK_IN' ? "white" : "transparent"} />
+                    <span style={{ fontSize: '13px', fontWeight: attendanceType === 'CHECK_IN' ? '600' : '500', color: attendanceType === 'CHECK_IN' ? '#0d9488' : '#334155' }}>Check In</span>
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <LogOut size={20} color="#ef4444" />
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#334155' }}>Check Out</span>
+
+                  <div 
+                    onClick={() => setAttendanceType('CHECK_OUT')}
+                    style={{ border: attendanceType === 'CHECK_OUT' ? '2px solid #ef4444' : '1px solid #e2e8f0', backgroundColor: attendanceType === 'CHECK_OUT' ? '#fef2f2' : 'white', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxSizing: 'border-box' }}
+                  >
+                    <LogOut size={20} color={attendanceType === 'CHECK_OUT' ? "#ef4444" : "#94a3b8"} />
+                    <span style={{ fontSize: '13px', fontWeight: attendanceType === 'CHECK_OUT' ? '600' : '500', color: attendanceType === 'CHECK_OUT' ? '#ef4444' : '#334155' }}>Check Out</span>
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <Briefcase size={20} color="#3b82f6" />
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#334155' }}>On Duty</span>
+
+                  <div 
+                    onClick={() => setAttendanceType('ON_DUTY')}
+                    style={{ border: attendanceType === 'ON_DUTY' ? '2px solid #3b82f6' : '1px solid #e2e8f0', backgroundColor: attendanceType === 'ON_DUTY' ? '#eff6ff' : 'white', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxSizing: 'border-box' }}
+                  >
+                    <Briefcase size={20} color={attendanceType === 'ON_DUTY' ? "#3b82f6" : "#94a3b8"} />
+                    <span style={{ fontSize: '13px', fontWeight: attendanceType === 'ON_DUTY' ? '600' : '500', color: attendanceType === 'ON_DUTY' ? '#3b82f6' : '#334155' }}>On Duty</span>
                   </div>
-                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <HomeIcon size={20} color="#6366f1" />
-                    <span style={{ fontSize: '13px', fontWeight: '500', color: '#334155' }}>Work From Home</span>
+
+                  <div 
+                    onClick={() => setAttendanceType('WORK_FROM_HOME')}
+                    style={{ border: attendanceType === 'WORK_FROM_HOME' ? '2px solid #6366f1' : '1px solid #e2e8f0', backgroundColor: attendanceType === 'WORK_FROM_HOME' ? '#eef2ff' : 'white', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', boxSizing: 'border-box' }}
+                  >
+                    <HomeIcon size={20} color={attendanceType === 'WORK_FROM_HOME' ? "#6366f1" : "#94a3b8"} />
+                    <span style={{ fontSize: '13px', fontWeight: attendanceType === 'WORK_FROM_HOME' ? '600' : '500', color: attendanceType === 'WORK_FROM_HOME' ? '#6366f1' : '#334155' }}>Work From Home</span>
                   </div>
+
                 </div>
               </div>
 
@@ -516,13 +550,37 @@ function Attendance() {
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Time <span style={{ color: '#ef4444' }}>*</span></label>
-                  <input
-                    type="time"
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: 'white', boxSizing: 'border-box', outline: 'none', fontFamily: 'inherit' }}
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                  />
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Time (IST) <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <CustomSelect 
+                      value={timeHour} 
+                      onChange={setTimeHour}
+                      options={Array.from({ length: 12 }, (_, i) => {
+                        const h = String(i === 0 ? 12 : i).padStart(2, '0');
+                        return { value: h, label: h };
+                      })}
+                      width="100%"
+                    />
+                    <span style={{ fontWeight: 'bold', color: '#64748b' }}>:</span>
+                    <CustomSelect 
+                      value={timeMinute} 
+                      onChange={setTimeMinute}
+                      options={Array.from({ length: 60 }, (_, i) => {
+                        const m = String(i).padStart(2, '0');
+                        return { value: m, label: m };
+                      })}
+                      width="100%"
+                    />
+                    <CustomSelect 
+                      value={timeAmPm} 
+                      onChange={setTimeAmPm}
+                      options={[
+                        { value: 'AM', label: 'AM' },
+                        { value: 'PM', label: 'PM' }
+                      ]}
+                      width="100%"
+                    />
+                  </div>
                 </div>
               </div>
 

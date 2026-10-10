@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Camera, User, Briefcase, Phone, FileText, 
-  Calendar, Save
+  Calendar, Save, ChevronDown
 } from 'lucide-react';
 import { createEmployee, updateEmployee } from '../../api/employeeApi';
 import { getDepartments } from '../../api/departmentApi';
+import CustomSelect from '../../components/CustomSelect';
 
 function AddEmployee({ onBack, editData }) {
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [error, setError] = useState('');
+  const [photoUrl, setPhotoUrl] = useState(null);
+  const [activeSection, setActiveSection] = useState('personal');
+  const fileInputRef = React.useRef(null);
+  const personalRef = React.useRef(null);
+  const jobRef = React.useRef(null);
+  const contactRef = React.useRef(null);
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -22,7 +30,8 @@ function AddEmployee({ onBack, editData }) {
     joiningDate: '',
     employmentType: 'Full Time',
     status: 'ACTIVE',
-    address: ''
+    address: '',
+    photoUrl: null
   });
 
   useEffect(() => {
@@ -39,8 +48,12 @@ function AddEmployee({ onBack, editData }) {
         joiningDate: editData.joiningDate || '',
         employmentType: editData.employmentType || 'Full Time',
         status: editData.status || 'ACTIVE',
-        address: editData.address || ''
+        address: editData.address || '',
+        photoUrl: editData.photoUrl || null
       });
+      if (editData.photoUrl) {
+        setPhotoUrl(editData.photoUrl);
+      }
     }
   }, [editData]);
 
@@ -52,6 +65,23 @@ function AddEmployee({ onBack, editData }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Photo size must be less than 2MB');
+        return;
+      }
+      setError('');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result);
+        setFormData(prev => ({ ...prev, photoUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSave = async () => {
@@ -79,6 +109,27 @@ function AddEmployee({ onBack, editData }) {
       setLoading(false);
     }
   };
+
+  const scrollToSection = (sectionId, ref) => {
+    setActiveSection(sectionId);
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const getNavStyle = (isActive) => ({
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    padding: '12px 16px', 
+    backgroundColor: isActive ? '#eaf6f6' : 'transparent', 
+    color: isActive ? '#0d9488' : '#64748b', 
+    borderRadius: '8px', 
+    fontWeight: '500', 
+    fontSize: '14px', 
+    cursor: 'pointer', 
+    borderLeft: isActive ? '4px solid #0d9488' : '4px solid transparent'
+  });
 
   return (
     <div>
@@ -130,10 +181,24 @@ function AddEmployee({ onBack, editData }) {
         <div style={{ width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           {/* Photo Upload */}
           <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', border: '1px solid #e2e8f0' }}>
-            <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', marginBottom: '16px' }}>
-              <Camera size={32} />
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', marginBottom: '16px', overflow: 'hidden' }}>
+              {photoUrl ? (
+                <img src={photoUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <Camera size={32} />
+              )}
             </div>
-            <button style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginBottom: '8px', width: '100%' }}>
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg" 
+              ref={fileInputRef} 
+              style={{ display: 'none' }} 
+              onChange={handlePhotoChange}
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', marginBottom: '8px', width: '100%' }}
+            >
               Upload Photo
             </button>
             <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>JPG, PNG (Max 2MB)</p>
@@ -141,13 +206,22 @@ function AddEmployee({ onBack, editData }) {
 
           {/* Navigation */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', backgroundColor: '#eaf6f6', color: '#0d9488', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', borderLeft: '4px solid #0d9488' }}>
+            <div 
+              style={getNavStyle(activeSection === 'personal')} 
+              onClick={() => scrollToSection('personal', personalRef)}
+            >
               <User size={18} /> Personal Information
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer' }}>
+            <div 
+              style={getNavStyle(activeSection === 'job')} 
+              onClick={() => scrollToSection('job', jobRef)}
+            >
               <Briefcase size={18} /> Job Information
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer' }}>
+            <div 
+              style={getNavStyle(activeSection === 'contact')} 
+              onClick={() => scrollToSection('contact', contactRef)}
+            >
               <Phone size={18} /> Contact Information
             </div>
           </div>
@@ -157,7 +231,7 @@ function AddEmployee({ onBack, editData }) {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px', minWidth: '300px' }}>
           
           {/* Personal Information */}
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+          <div ref={personalRef} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Personal Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
@@ -192,7 +266,7 @@ function AddEmployee({ onBack, editData }) {
           </div>
 
           {/* Job Information */}
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+          <div ref={jobRef} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Job Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
@@ -201,25 +275,33 @@ function AddEmployee({ onBack, editData }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department <span style={{ color: '#ef4444' }}>*</span></label>
-                <select name="departmentName" value={formData.departmentName} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                  <option value="">Select department</option>
-                  {departments.filter(d => d.status === 'ACTIVE').map(dept => (
-                    <option key={dept.id} value={dept.departmentName}>{dept.departmentName}</option>
-                  ))}
-                </select>
+                <CustomSelect
+                  name="departmentName"
+                  value={formData.departmentName}
+                  onChange={handleChange}
+                  placeholder="Select department"
+                  options={departments.filter(d => d.status === 'ACTIVE').map(dept => ({ label: dept.name, value: dept.name }))}
+                  width="100%"
+                />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Designation <span style={{ color: '#ef4444' }}>*</span></label>
-                <select name="designation" value={formData.designation} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                  <option value="">Select designation</option>
-                  <option value="Software Developer">Software Developer</option>
-                  <option value="Senior Developer">Senior Developer</option>
-                  <option value="UI/UX Designer">UI/UX Designer</option>
-                  <option value="Operations Executive">Operations Executive</option>
-                  <option value="Marketing Executive">Marketing Executive</option>
-                  <option value="HR Executive">HR Executive</option>
-                  <option value="Accountant">Accountant</option>
-                </select>
+                <CustomSelect
+                  name="designation"
+                  value={formData.designation}
+                  onChange={handleChange}
+                  placeholder="Select designation"
+                  options={[
+                    { label: 'Software Developer', value: 'Software Developer' },
+                    { label: 'Senior Developer', value: 'Senior Developer' },
+                    { label: 'UI/UX Designer', value: 'UI/UX Designer' },
+                    { label: 'Operations Executive', value: 'Operations Executive' },
+                    { label: 'Marketing Executive', value: 'Marketing Executive' },
+                    { label: 'HR Executive', value: 'HR Executive' },
+                    { label: 'Accountant', value: 'Accountant' }
+                  ]}
+                  width="100%"
+                />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
@@ -229,25 +311,39 @@ function AddEmployee({ onBack, editData }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Employment Type</label>
-                <select name="employmentType" value={formData.employmentType} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                  <option value="Full Time">Full Time</option>
-                  <option value="Part Time">Part Time</option>
-                  <option value="Contract">Contract</option>
-                </select>
+                <CustomSelect
+                  name="employmentType"
+                  value={formData.employmentType}
+                  onChange={handleChange}
+                  placeholder="Select employment type"
+                  options={[
+                    { label: 'Full Time', value: 'Full Time' },
+                    { label: 'Part Time', value: 'Part Time' },
+                    { label: 'Contract', value: 'Contract' }
+                  ]}
+                  width="100%"
+                />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Status</label>
-                <select name="status" value={formData.status} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="ON_LEAVE">On Leave</option>
-                </select>
+                <CustomSelect
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  placeholder="Select status"
+                  options={[
+                    { label: 'Active', value: 'ACTIVE' },
+                    { label: 'Inactive', value: 'INACTIVE' },
+                    { label: 'On Leave', value: 'ON_LEAVE' }
+                  ]}
+                  width="100%"
+                />
               </div>
             </div>
           </div>
 
           {/* Contact Information */}
-          <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
+          <div ref={contactRef} style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 20px 0' }}>Contact Information</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>

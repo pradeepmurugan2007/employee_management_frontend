@@ -14,6 +14,7 @@ import { getAttendance } from '../../api/attendanceApi';
 import { getLeaveRequests } from '../../api/leaveApi';
 import { getEmployees } from '../../api/employeeApi';
 import { getDepartments } from '../../api/departmentApi';
+import CustomSelect from '../../components/CustomSelect';
 
 function Reports() {
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,10 @@ function Reports() {
   const [backendStats, setBackendStats] = useState(null);
 
   // Filter state
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
+  
   const [listMonth, setListMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -37,7 +42,48 @@ function Reports() {
   
   useEffect(() => {
     fetchReportData();
-  }, [listMonth]);
+  }, []);
+
+  const handleGenerate = () => {
+    fetchReportData();
+  };
+
+  const handleExport = () => {
+    if (filteredReportRecords.length === 0) {
+      alert("No data to export");
+      return;
+    }
+    
+    // Create CSV content
+    const headers = ["Employee ID", "Name", "Department", "Total Days", "Present", "Absent", "Late", "On Leave", "Attendance %"];
+    const csvRows = [headers.join(",")];
+    
+    filteredReportRecords.forEach(record => {
+      const row = [
+        record.empId,
+        `"${record.name}"`,
+        `"${record.dept}"`,
+        record.total,
+        record.present,
+        record.absent,
+        record.late,
+        record.leave,
+        `${record.percentage}%`
+      ];
+      csvRows.push(row.join(","));
+    });
+    
+    const csvString = csvRows.join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Employee_Report_${listMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const fetchReportData = async () => {
     setLoading(true);
@@ -140,10 +186,16 @@ function Reports() {
   };
 
   const filteredReportRecords = reportRecords.filter(record => {
-    if (!searchTerm) return true;
-    const lowerSearch = searchTerm.toLowerCase();
-    return record.name.toLowerCase().includes(lowerSearch) || 
-           record.empId.toLowerCase().includes(lowerSearch);
+    if (searchTerm) {
+      const lowerSearch = searchTerm.toLowerCase();
+      if (!record.name.toLowerCase().includes(lowerSearch) && 
+          !record.empId.toLowerCase().includes(lowerSearch)) {
+        return false;
+      }
+    }
+    if (departmentFilter && record.dept !== departmentFilter) return false;
+    if (employeeFilter && String(record.id) !== employeeFilter) return false;
+    return true;
   });
 
   return (
@@ -154,7 +206,7 @@ function Reports() {
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 5px 0' }}>Reports</h1>
           <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>View and generate employee reports</p>
         </div>
-        <button style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
+        <button onClick={handleExport} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
           <Download size={16} />
           Export Report
           <ChevronDown size={16} />
@@ -200,27 +252,40 @@ function Reports() {
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#64748b', marginBottom: '6px' }}>Department</label>
-          <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', color: '#0f172a', fontWeight: '500', outline: 'none', appearance: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-            <option>All Departments</option>
-          </select>
+          <CustomSelect
+            value={departmentFilter}
+            onChange={(val) => setDepartmentFilter(val)}
+            placeholder="All Departments"
+            options={departmentRecords.map(d => ({ label: d.name, value: d.name }))}
+            width="100%"
+          />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#64748b', marginBottom: '6px' }}>Status</label>
-          <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', color: '#0f172a', fontWeight: '500', outline: 'none', appearance: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-            <option>All Status</option>
-          </select>
+          <CustomSelect
+            value={statusFilter}
+            onChange={(val) => setStatusFilter(val)}
+            placeholder="All Status"
+            options={[
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Inactive', value: 'INACTIVE' },
+              { label: 'On Leave', value: 'ON_LEAVE' }
+            ]}
+            width="100%"
+          />
         </div>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: '500', color: '#64748b', marginBottom: '6px' }}>Employee</label>
-          <div style={{ position: 'relative' }}>
-            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-            <select style={{ width: '100%', padding: '10px 12px 10px 36px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', color: '#0f172a', fontWeight: '500', outline: 'none', appearance: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
-              <option>All Employees</option>
-            </select>
-          </div>
+          <CustomSelect
+            value={employeeFilter}
+            onChange={(val) => setEmployeeFilter(val)}
+            placeholder="All Employees"
+            options={employeeRecords.map(e => ({ label: `${e.firstName} ${e.lastName}`, value: e.id.toString() }))}
+            width="100%"
+          />
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}>
+          <button onClick={handleGenerate} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', width: '100%', boxSizing: 'border-box' }}>
             Generate
           </button>
         </div>
@@ -393,7 +458,7 @@ function Reports() {
                 style={{ width: '100%', padding: '8px 10px 8px 36px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
-            <button style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+            <button onClick={handleExport} style={{ backgroundColor: 'white', color: '#0d9488', border: '1px solid #0d9488', borderRadius: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
               <Download size={14} /> Export
             </button>
           </div>

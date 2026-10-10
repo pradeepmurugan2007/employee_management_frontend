@@ -7,6 +7,7 @@ import {
 import { getLeaveRequests, makeLeaveDecision, createLeaveRequest } from '../../api/leaveApi';
 import { getEmployees } from '../../api/employeeApi';
 import AddLeaveRequest from './AddLeaveRequest';
+import CustomSelect from '../../components/CustomSelect';
 
 function LeaveRequests() {
   const [records, setRecords] = useState([]);
@@ -198,16 +199,16 @@ function LeaveRequests() {
               style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
-          <select
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', outline: 'none', backgroundColor: 'white' }}
-          >
-            <option value="">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
+            onChange={(val) => setStatusFilter(val)}
+            placeholder="All Status"
+            options={[
+              { label: 'Pending', value: 'PENDING' },
+              { label: 'Approved', value: 'APPROVED' },
+              { label: 'Rejected', value: 'REJECTED' }
+            ]}
+          />
           <button
             onClick={fetchLeaves}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', backgroundColor: 'white' }}

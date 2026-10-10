@@ -41,6 +41,8 @@ function Login() {
         password: password
       });
       if (response.data === "Login Success") {
+        localStorage.setItem("authToken", "emply-token-12345");
+        localStorage.setItem("user", JSON.stringify({ username }));
         navigate("/home");
       } else {
         alert("Invalid Username or Password");

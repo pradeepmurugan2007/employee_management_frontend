@@ -6,6 +6,7 @@ import {
 import { getDepartments, deleteDepartment, updateDepartmentStatus } from '../../api/departmentApi';
 import { getEmployees } from '../../api/employeeApi';
 import AddDepartment from './AddDepartment';
+import CustomSelect from '../../components/CustomSelect';
 
 function Departments() {
   const [departments, setDepartments] = useState([]);
@@ -177,15 +178,15 @@ function Departments() {
               style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
-          <select 
+          <CustomSelect
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', outline: 'none', backgroundColor: 'white' }}
-          >
-            <option value="">All Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
-          </select>
+            onChange={(val) => setStatusFilter(val)}
+            placeholder="All Status"
+            options={[
+              { label: 'Active', value: 'ACTIVE' },
+              { label: 'Inactive', value: 'INACTIVE' }
+            ]}
+          />
           <button
             onClick={fetchDepartments}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', backgroundColor: 'white' }}
@@ -238,10 +239,10 @@ function Departments() {
                 filteredDepartments.map((dept, idx) => (
                   <tr key={dept.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{idx + 1}</td>
-                    <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '600' }}>{dept.departmentName}</td>
+                    <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '600' }}>{dept.name}</td>
                     <td style={{ padding: '16px 8px', color: '#64748b' }}>{dept.description || '-'}</td>
                     <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500', textAlign: 'center' }}>
-                      {employees.filter(e => e.departmentName === dept.departmentName).length}
+                      {employees.filter(e => e.departmentName === dept.name).length}
                     </td>
                     <td style={{ padding: '16px 8px' }}>
                       <span style={{ backgroundColor: getStatusColor(dept.status), color: getStatusTextColor(dept.status), padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', display: 'inline-block' }}>

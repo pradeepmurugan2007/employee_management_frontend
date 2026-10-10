@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CalendarDays, CloudUpload } from 'lucide-react';
 import { createLeaveRequest } from '../../api/leaveApi';
 import { getEmployees } from '../../api/employeeApi';
+import CustomSelect from '../../components/CustomSelect';
 
 function AddLeaveRequest({ onBack, onSaveSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -145,31 +146,30 @@ function AddLeaveRequest({ onBack, onSaveSuccess }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Employee <span style={{ color: '#ef4444' }}>*</span></label>
-                <select 
+                <CustomSelect 
                   name="employeeId"
                   value={formData.employeeId}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}
-                >
-                  <option value="">Select Employee</option>
-                  {employees.map(emp => (
-                    <option key={emp.id} value={emp.id}>{emp.firstName} {emp.lastName} ({emp.employeeCode})</option>
-                  ))}
-                </select>
+                  placeholder="Select Employee"
+                  options={employees.map(emp => ({ label: `${emp.firstName} ${emp.lastName} (${emp.employeeCode})`, value: emp.id.toString() }))}
+                  width="100%"
+                />
               </div>
               
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Leave Type <span style={{ color: '#ef4444' }}>*</span></label>
-                <select 
+                <CustomSelect 
                   name="leaveType"
                   value={formData.leaveType}
                   onChange={handleChange}
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#64748b', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}
-                >
-                  <option value="Casual Leave">Casual Leave</option>
-                  <option value="Sick Leave">Sick Leave</option>
-                  <option value="Annual Leave">Annual Leave</option>
-                </select>
+                  placeholder="Select Leave Type"
+                  options={[
+                    { label: 'Casual Leave', value: 'Casual Leave' },
+                    { label: 'Sick Leave', value: 'Sick Leave' },
+                    { label: 'Annual Leave', value: 'Annual Leave' }
+                  ]}
+                  width="100%"
+                />
               </div>
             </div>
 
