@@ -22,7 +22,7 @@ function ResetPassword() {
     }
   }, [location]);
 
-  const API_URL = "http://localhost:8080/api/todo";
+  const API_URL = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8080") + "/api/Todo";
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
