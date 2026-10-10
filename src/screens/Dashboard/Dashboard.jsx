@@ -5,6 +5,7 @@ import { getDashboardSummary, getRecentEmployees, getPendingLeaves, getDepartmen
 import { getAttendanceSummary } from '../../api/attendanceApi';
 import { makeLeaveDecision } from '../../api/leaveApi';
 import CustomSelect from '../../components/CustomSelect';
+import { formatDate } from '../../utils/formatUtils';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -162,7 +163,7 @@ function Dashboard() {
         <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
           <CalendarCheck size={18} color="#64748b" />
           <span style={{ color: '#0f172a' }}>
-            {new Date(listMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            {formatDate(new Date(listMonth + '-01'))}
           </span>
           <ChevronDown size={16} color="#64748b" style={{ marginLeft: '4px' }} />
           <input 
@@ -339,7 +340,7 @@ function Dashboard() {
                         </td>
                         <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.employeeCode || '-'}</td>
                         <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.departmentName || '-'}</td>
-                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.joiningDate || '-'}</td>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{formatDate(emp.joiningDate)}</td>
                         <td style={{ padding: '12px 8px' }}>
                           <span style={{ backgroundColor: getStatusColor(emp.status), color: getStatusTextColor(emp.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
                             {emp.status === 'ACTIVE' ? 'Active' : emp.status}
@@ -386,8 +387,8 @@ function Dashboard() {
                         {leave.employeeName}
                       </td>
                       <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.leaveType}</td>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.startDate}</td>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.endDate}</td>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{formatDate(leave.startDate)}</td>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{formatDate(leave.endDate)}</td>
                       <td style={{ padding: '12px 8px' }}>
                         <span style={{ backgroundColor: getStatusColor(leave.status), color: getStatusTextColor(leave.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>{leave.status}</span>
                       </td>

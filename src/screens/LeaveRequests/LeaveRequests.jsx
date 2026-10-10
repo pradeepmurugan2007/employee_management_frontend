@@ -8,6 +8,7 @@ import { getLeaveRequests, makeLeaveDecision, createLeaveRequest } from '../../a
 import { getEmployees } from '../../api/employeeApi';
 import AddLeaveRequest from './AddLeaveRequest';
 import CustomSelect from '../../components/CustomSelect';
+import { formatDate } from '../../utils/formatUtils';
 
 function LeaveRequests() {
   const [records, setRecords] = useState([]);
@@ -274,8 +275,8 @@ function LeaveRequests() {
                     <td style={{ padding: '16px 8px' }}>
                       <span style={{ backgroundColor: getTypeColor(record.leaveType), color: getTypeTextColor(record.leaveType), padding: '6px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '500', display: 'inline-block' }}>{record.leaveType}</span>
                     </td>
-                    <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.startDate}</td>
-                    <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.endDate}</td>
+                    <td style={{ padding: '16px 8px', color: '#64748b' }}>{formatDate(record.startDate)}</td>
+                    <td style={{ padding: '16px 8px', color: '#64748b' }}>{formatDate(record.endDate)}</td>
                     <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.requestedDays || '-'}</td>
                     <td style={{ padding: '16px 8px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }}>{record.reason}</td>
                     <td style={{ padding: '16px 8px' }}>

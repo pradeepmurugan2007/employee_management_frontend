@@ -7,6 +7,9 @@ import {
 } from 'lucide-react';
 import { getAttendance, getAttendanceSummary, markAttendance } from '../../api/attendanceApi';
 import { getDepartments } from '../../api/departmentApi';
+import { getEmployees } from '../../api/employeeApi';
+import { formatDate, formatTime } from '../../utils/formatUtils';
+import CustomDatePicker from '../../components/CustomDatePicker';
 
 const CustomSelect = ({ value, onChange, options, placeholder, width }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -61,6 +64,8 @@ function Attendance() {
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
 
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -76,8 +81,16 @@ function Attendance() {
 
   const [attendanceType, setAttendanceType] = useState('CHECK_IN');
   
+  const getInitialAppSettings = () => {
+    const saved = localStorage.getItem('appSettings');
+    return saved ? JSON.parse(saved) : {};
+  };
+
+  const is24Hour = getInitialAppSettings()?.timeFormat === '24 Hour';
+
   const [timeHour, setTimeHour] = useState(() => {
     let h = getISTDate().getHours();
+    if (is24Hour) return String(h).padStart(2, '0');
     return h % 12 === 0 ? '12' : String(h % 12).padStart(2, '0');
   });
   const [timeMinute, setTimeMinute] = useState(() => String(getISTDate().getMinutes()).padStart(2, '0'));
@@ -94,13 +107,20 @@ function Attendance() {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Calculate first and last day of selected month
-      const [year, month] = listMonth.split('-');
-      const firstDay = `${year}-${month}-01`;
-      const lastDayDate = new Date(year, month, 0);
-      const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
-
-      const params = { from: firstDay, to: lastDay };
+      let params = {};
+      
+      if (dateFilter) {
+        params.from = dateFilter;
+        params.to = dateFilter;
+      } else {
+        // Calculate first and last day of selected month
+        const [year, month] = listMonth.split('-');
+        const firstDay = `${year}-${month}-01`;
+        const lastDayDate = new Date(year, month, 0);
+        const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
+        params.from = firstDay;
+        params.to = lastDay;
+      }
 
       const [attRes, sumRes] = await Promise.all([
         getAttendance(params),
@@ -119,19 +139,29 @@ function Attendance() {
     try {
       const today = getISTDate();
       let hours = parseInt(timeHour, 10);
-      if (timeAmPm === 'PM' && hours < 12) hours += 12;
-      if (timeAmPm === 'AM' && hours === 12) hours = 0;
+      if (!is24Hour) {
+        if (timeAmPm === 'PM' && hours < 12) hours += 12;
+        if (timeAmPm === 'AM' && hours === 12) hours = 0;
+      }
       
       today.setHours(hours, parseInt(timeMinute, 10), 0, 0);
 
+      const emp = employees.find(e => e.id === selectedEmployee);
+      
+      const y = 2026; // since the UI currently hardcodes the year
+      const m = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(selectedMonth) + 1).padStart(2, '0');
+      const d = String(selectedDate).padStart(2, '0');
+      const formattedWorkDate = `${y}-${m}-${d}`;
+
       const payload = {
-        employeeId: 1, // hardcoded for now until auth context is added
-        employeeName: "Iniyan",
+        employeeId: emp ? emp.id : 1, // Fallback if none selected
+        employeeName: emp ? emp.firstName + ' ' + emp.lastName : "Iniyan",
         attendanceType: attendanceType,
         checkInAt: attendanceType === 'CHECK_IN' ? today.toISOString() : null,
         checkOutAt: attendanceType === 'CHECK_OUT' ? today.toISOString() : null,
         status: "PRESENT",
-        remarks: "Marked from Dashboard"
+        remarks: "Marked from Dashboard",
+        workDate: formattedWorkDate
       };
       await markAttendance(payload);
       setIsMarkingAttendance(false);
@@ -147,10 +177,11 @@ function Attendance() {
       fetchAttendanceData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [listMonth]);
+  }, [listMonth, dateFilter]);
 
   useEffect(() => {
     getDepartments().then(res => setDepartments(res.data)).catch(console.error);
+    getEmployees().then(res => setEmployees(res.data)).catch(console.error);
   }, []);
 
   const getStatusColor = (status) => {
@@ -189,9 +220,6 @@ function Attendance() {
     if (departmentFilter) {
       match = match && record.departmentName === departmentFilter;
     }
-    if (dateFilter) {
-      match = match && record.workDate === dateFilter;
-    }
     return match;
   });
 
@@ -204,18 +232,21 @@ function Attendance() {
           <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>View and manage employee attendance records</p>
         </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
-            <CalendarDays size={18} color="#64748b" />
-            <span style={{ color: '#0f172a' }}>
-              {new Date(listMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-            </span>
-            <ChevronDown size={16} color="#64748b" style={{ marginLeft: '4px' }} />
-            <input 
-              type="month" 
-              className="hidden-month-input"
-              value={listMonth}
-              onChange={(e) => setListMonth(e.target.value)}
+          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0', display: 'flex', alignItems: 'center', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative' }}>
+            <CalendarDays size={18} color="#64748b" style={{ position: 'absolute', left: '12px', zIndex: 1 }} />
+            <CustomDatePicker
+              selected={new Date(listMonth + '-01')}
+              onChange={(date) => {
+                if (date) {
+                  const y = date.getFullYear();
+                  const m = String(date.getMonth() + 1).padStart(2, '0');
+                  setListMonth(`${y}-${m}`);
+                }
+              }}
+              isMonthPicker={true}
+              style={{ paddingLeft: '38px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', width: '160px' }}
             />
+            <ChevronDown size={16} color="#64748b" style={{ position: 'absolute', right: '12px', pointerEvents: 'none' }} />
           </div>
           <button
             onClick={() => setIsMarkingAttendance(true)}
@@ -323,11 +354,20 @@ function Attendance() {
             width="140px"
           />
 
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', outline: 'none', backgroundColor: 'white', minWidth: '140px' }}
+          <CustomDatePicker
+            selected={dateFilter ? new Date(dateFilter) : null}
+            onChange={(date) => {
+              if (date) {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                setDateFilter(`${y}-${m}-${d}`);
+              } else {
+                setDateFilter('');
+              }
+            }}
+            placeholderText="Filter by Date"
+            style={{ padding: '10px 16px', minWidth: '140px' }}
           />
           <button
             onClick={fetchAttendanceData}
@@ -391,9 +431,9 @@ function Attendance() {
                           </div>
                         </td>
                         <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.departmentName || '-'}</td>
-                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.workDate}</td>
-                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkInAt ? new Date(record.checkInAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkOutAt ? new Date(record.checkOutAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{formatDate(record.workDate)}</td>
+                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkInAt ? formatTime(record.checkInAt) : '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#0f172a', fontWeight: '500' }}>{record.checkOutAt ? formatTime(record.checkOutAt) : '-'}</td>
                         <td style={{ padding: '16px 8px', color: '#64748b' }}>{record.workingHours || '-'}</td>
                         <td style={{ padding: '16px 8px' }}>
                           <span style={{ backgroundColor: getStatusColor(record.status), color: getStatusTextColor(record.status), padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
@@ -487,8 +527,20 @@ function Attendance() {
                 </div>
               </div>
 
+              {/* Employee Selection */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Select Employee <span style={{ color: '#ef4444' }}>*</span></label>
+                <CustomSelect
+                  value={selectedEmployee}
+                  onChange={setSelectedEmployee}
+                  options={employees.map(e => ({ value: e.id, label: `${e.firstName} ${e.lastName}` }))}
+                  placeholder="Choose an employee..."
+                  width="100%"
+                />
+              </div>
+
               {/* Date & Time */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', marginBottom: '8px' }}>Date <span style={{ color: '#ef4444' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
@@ -496,7 +548,7 @@ function Attendance() {
                     <div
                       onClick={() => setShowDatePicker(!showDatePicker)}
                       style={{ width: '100%', padding: '10px 36px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#334155', backgroundColor: '#f8fafc', boxSizing: 'border-box', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                      {selectedDate} {selectedMonth} 2026
+                      {formatDate(`2026-${String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(selectedMonth) + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`)}
                     </div>
                     <ChevronDown size={16} color="#94a3b8" style={{ position: 'absolute', top: '12px', right: '12px', pointerEvents: 'none' }} />
 
@@ -555,8 +607,13 @@ function Attendance() {
                     <CustomSelect 
                       value={timeHour} 
                       onChange={setTimeHour}
-                      options={Array.from({ length: 12 }, (_, i) => {
-                        const h = String(i === 0 ? 12 : i).padStart(2, '0');
+                      options={Array.from({ length: is24Hour ? 24 : 12 }, (_, i) => {
+                        let h;
+                        if (is24Hour) {
+                          h = String(i).padStart(2, '0');
+                        } else {
+                          h = String(i === 0 ? 12 : i).padStart(2, '0');
+                        }
                         return { value: h, label: h };
                       })}
                       width="100%"
@@ -571,15 +628,17 @@ function Attendance() {
                       })}
                       width="100%"
                     />
-                    <CustomSelect 
-                      value={timeAmPm} 
-                      onChange={setTimeAmPm}
-                      options={[
-                        { value: 'AM', label: 'AM' },
-                        { value: 'PM', label: 'PM' }
-                      ]}
-                      width="100%"
-                    />
+                    {!is24Hour && (
+                      <CustomSelect 
+                        value={timeAmPm} 
+                        onChange={setTimeAmPm}
+                        options={[
+                          { value: 'AM', label: 'AM' },
+                          { value: 'PM', label: 'PM' }
+                        ]}
+                        width="100%"
+                      />
+                    )}
                   </div>
                 </div>
               </div>

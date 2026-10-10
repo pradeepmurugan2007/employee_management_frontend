@@ -13,6 +13,7 @@ import {
 import AddEmployee from './AddEmployee';
 import CustomSelect from '../../components/CustomSelect';
 import { getEmployees, deleteEmployee, updateEmployeeStatus } from '../../api/employeeApi';
+import { formatDate } from '../../utils/formatUtils';
 
 function Employees() {
   const [employees, setEmployees] = useState([]);
@@ -201,7 +202,7 @@ function Employees() {
                         <td style={{ padding: '16px 8px', color: '#64748b' }}>{emp.departmentName || '-'}</td>
                         <td style={{ padding: '16px 8px', color: '#64748b' }}>{emp.designation || '-'}</td>
                         <td style={{ padding: '16px 8px', color: '#64748b' }}>{emp.email || '-'}</td>
-                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{emp.joiningDate || '-'}</td>
+                        <td style={{ padding: '16px 8px', color: '#64748b' }}>{emp.joiningDate ? formatDate(emp.joiningDate) : '-'}</td>
                         <td style={{ padding: '16px 8px' }}>
                           <span style={{ backgroundColor: getStatusColor(emp.status), color: getStatusTextColor(emp.status), padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '500', display: 'inline-block' }}>
                             {emp.status === 'ACTIVE' ? 'Active' : emp.status === 'INACTIVE' ? 'Inactive' : emp.status}

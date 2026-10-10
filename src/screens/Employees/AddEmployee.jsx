@@ -6,6 +6,7 @@ import {
 import { createEmployee, updateEmployee } from '../../api/employeeApi';
 import { getDepartments } from '../../api/departmentApi';
 import CustomSelect from '../../components/CustomSelect';
+import CustomDatePicker from '../../components/CustomDatePicker';
 
 function AddEmployee({ onBack, editData }) {
   const [loading, setLoading] = useState(false);
@@ -254,7 +255,17 @@ function AddEmployee({ onBack, editData }) {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Date of Birth</label>
-                <input name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                <CustomDatePicker
+                  selected={formData.dateOfBirth ? new Date(formData.dateOfBirth) : null}
+                  onChange={(date) => {
+                    if (date) {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      setFormData({...formData, dateOfBirth: `${y}-${m}-${d}`});
+                    }
+                  }}
+                />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '20px' }}>
@@ -317,7 +328,17 @@ function AddEmployee({ onBack, editData }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Joining Date</label>
-                <input name="joiningDate" value={formData.joiningDate} onChange={handleChange} type="date" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                <CustomDatePicker
+                  selected={formData.joiningDate ? new Date(formData.joiningDate) : null}
+                  onChange={(date) => {
+                    if (date) {
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      setFormData({...formData, joiningDate: `${y}-${m}-${d}`});
+                    }
+                  }}
+                />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Employment Type</label>

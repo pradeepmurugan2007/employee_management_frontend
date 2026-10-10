@@ -5,6 +5,7 @@ import logo from "../../assets/logo.svg";
 import { 
   ChevronDown, HeadphonesIcon, User as UserIcon, Settings as SettingsIcon, LogOut as LogOutIcon
 } from "lucide-react";
+import { getNotifications, markAllNotificationsAsRead } from "../../api/notificationApi";
 
 import Dashboard from "../Dashboard/Dashboard";
 import Employees from "../Employees/Employees";
@@ -18,6 +19,8 @@ function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
   const [appSettings, setAppSettings] = useState(() => {
@@ -31,8 +34,30 @@ function Home() {
       if (saved) setAppSettings(JSON.parse(saved));
     };
     window.addEventListener('settingsUpdated', handleSettingsUpdate);
+    
+    // Fetch notifications
+    fetchNotifications();
+
     return () => window.removeEventListener('settingsUpdated', handleSettingsUpdate);
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (err) {
+      console.error("Failed to load notifications", err);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsAsRead();
+      fetchNotifications();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Close sidebar on mobile when tab changes
   const handleTabChange = (tab) => {
@@ -41,6 +66,7 @@ function Home() {
       setIsSidebarOpen(false);
     }
     setIsProfileDropdownOpen(false);
+    setIsNotificationOpen(false);
   };
 
   const handleLogout = async () => {
@@ -55,15 +81,19 @@ function Home() {
   };
 
   const renderContent = () => {
+    // We use a unique key based on the formats so that when settings change,
+    // the active tab component completely remounts and re-evaluates formatUtils.
+    const settingsKey = `${appSettings?.dateFormat}-${appSettings?.timeFormat}`;
+    
     switch (activeTab) {
-      case "dashboard": return <Dashboard />;
-      case "employees": return <Employees />;
-      case "attendance": return <Attendance />;
-      case "leave_requests": return <LeaveRequests />;
-      case "departments": return <Departments />;
-      case "reports": return <Reports />;
+      case "dashboard": return <Dashboard key={settingsKey} />;
+      case "employees": return <Employees key={settingsKey} />;
+      case "attendance": return <Attendance key={settingsKey} />;
+      case "leave_requests": return <LeaveRequests key={settingsKey} />;
+      case "departments": return <Departments key={settingsKey} />;
+      case "reports": return <Reports key={settingsKey} />;
       case "settings": return <SettingsPage />;
-      default: return <Dashboard />;
+      default: return <Dashboard key={settingsKey} />;
     }
   };
 
@@ -127,9 +157,51 @@ function Home() {
             </div>
           </div>
           <div className="topbar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ position: 'relative', cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#64748b' }}>
-              <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>notifications</span>
-              <span style={{ position: 'absolute', top: '1px', right: '2px', backgroundColor: '#ef4444', width: '8px', height: '8px', borderRadius: '50%', border: '2px solid white' }}></span>
+            <div style={{ position: 'relative' }}>
+              <div 
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#64748b', padding: '8px', borderRadius: '50%', backgroundColor: isNotificationOpen ? '#f1f5f9' : 'transparent' }}
+                onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+              >
+                <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>notifications</span>
+                {appSettings?.enableEmailNotifications !== false && notifications.some(n => !n.read) && (
+                  <span style={{ position: 'absolute', top: '6px', right: '8px', backgroundColor: '#ef4444', width: '8px', height: '8px', borderRadius: '50%', border: '2px solid white' }}></span>
+                )}
+              </div>
+              
+              {isNotificationOpen && (
+                <div style={{ position: 'absolute', top: '100%', right: '0', marginTop: '8px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)', width: '320px', zIndex: 1000, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>Notifications</div>
+                    <div onClick={handleMarkAllRead} style={{ fontSize: '12px', color: '#0d9488', cursor: 'pointer', fontWeight: '500' }}>Mark all as read</div>
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                    {appSettings?.enableEmailNotifications === false ? (
+                      <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                        Notifications are disabled in settings.
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                        No notifications.
+                      </div>
+                    ) : (
+                      notifications.map((notif, index) => (
+                        <div key={notif.id || index} style={{ padding: '12px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '12px', cursor: 'pointer', backgroundColor: notif.read ? 'transparent' : '#f0fdfa' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseLeave={e => e.currentTarget.style.backgroundColor = notif.read ? 'transparent' : '#f0fdfa'}>
+                          <div style={{ backgroundColor: notif.type === 'SUCCESS' ? '#dcfce7' : notif.type === 'WARNING' ? '#fef3c7' : '#e0f2fe', color: notif.type === 'SUCCESS' ? '#16a34a' : notif.type === 'WARNING' ? '#d97706' : '#0284c7', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span className="material-symbols-rounded" style={{ fontSize: '18px' }}>{notif.type === 'SUCCESS' ? 'check_circle' : notif.type === 'WARNING' ? 'warning' : 'info'}</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '13px', color: '#0f172a', marginBottom: '4px' }}>{notif.message}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{new Date(notif.createdAt).toLocaleString()}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <div style={{ padding: '12px', borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '13px', color: '#0d9488', fontWeight: '500', cursor: 'pointer' }}>
+                    View all notifications
+                  </div>
+                </div>
+              )}
             </div>
             <div style={{ position: 'relative' }}>
               <div 
