@@ -6,6 +6,50 @@ import {
   LogOut, Briefcase, Home as HomeIcon, CheckCircle2, Crosshair, Map, RefreshCw
 } from 'lucide-react';
 import { getAttendance, getAttendanceSummary, markAttendance } from '../../api/attendanceApi';
+import { getDepartments } from '../../api/departmentApi';
+
+const CustomSelect = ({ value, onChange, options, placeholder, width }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find(o => o.value === value)?.label || placeholder;
+
+  return (
+    <div style={{ position: 'relative', width: width || 'auto' }}>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', backgroundColor: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <span>{selectedLabel}</span>
+        <ChevronDown size={16} color="#94a3b8" />
+      </div>
+      {isOpen && (
+        <>
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10 }} onClick={() => setIsOpen(false)} />
+          <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', zIndex: 11, maxHeight: '250px', overflowY: 'auto' }}>
+            <div 
+              onClick={() => { onChange(''); setIsOpen(false); }}
+              style={{ padding: '10px 16px', fontSize: '14px', color: value === '' ? '#0d9488' : '#475569', cursor: 'pointer', backgroundColor: value === '' ? '#f0fdfa' : 'transparent', fontWeight: value === '' ? '500' : '400' }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = value === '' ? '#f0fdfa' : '#f8fafc'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = value === '' ? '#f0fdfa' : 'transparent'}
+            >
+              {placeholder}
+            </div>
+            {options.map(opt => (
+              <div 
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                style={{ padding: '10px 16px', fontSize: '14px', color: value === opt.value ? '#0d9488' : '#475569', cursor: 'pointer', backgroundColor: value === opt.value ? '#f0fdfa' : 'transparent', fontWeight: value === opt.value ? '500' : '400' }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = value === opt.value ? '#f0fdfa' : '#f8fafc'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = value === opt.value ? '#f0fdfa' : 'transparent'}
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 function Attendance() {
   const [records, setRecords] = useState([]);
@@ -13,6 +57,10 @@ function Attendance() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [departments, setDepartments] = useState([]);
 
   const [isMarkingAttendance, setIsMarkingAttendance] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -39,9 +87,7 @@ function Attendance() {
       const lastDay = `${year}-${month}-${String(lastDayDate.getDate()).padStart(2, '0')}`;
 
       const params = { from: firstDay, to: lastDay };
-      if (searchTerm) params.search = searchTerm;
-      // status filter would go here if we implemented it in the UI, currently the UI says "All Status" but it's hardcoded html
-      
+
       const [attRes, sumRes] = await Promise.all([
         getAttendance(params),
         getAttendanceSummary(today)
@@ -84,7 +130,11 @@ function Attendance() {
       fetchAttendanceData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [listMonth, searchTerm]);
+  }, [listMonth]);
+
+  useEffect(() => {
+    getDepartments().then(res => setDepartments(res.data)).catch(console.error);
+  }, []);
 
   const getStatusColor = (status) => {
     if (!status) return '#f1f5f9';
@@ -108,7 +158,25 @@ function Attendance() {
     }
   };
 
-  const filteredRecords = records;
+  const filteredRecords = records.filter(record => {
+    let match = true;
+    if (searchTerm) {
+      match = match && (
+        (record.employeeName && record.employeeName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (record.employeeCode && record.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    if (statusFilter) {
+      match = match && record.status === statusFilter;
+    }
+    if (departmentFilter) {
+      match = match && record.departmentName === departmentFilter;
+    }
+    if (dateFilter) {
+      match = match && record.workDate === dateFilter;
+    }
+    return match;
+  });
 
   return (
     <div>
@@ -142,7 +210,7 @@ function Attendance() {
       </div>
 
       {/* Stats Grid */}
-      <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '24px' }}>
+      <div className="stats-grid" style={{ marginBottom: '24px' }}>
         <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', display: 'flex', gap: '16px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ backgroundColor: '#ecfdf5', padding: '16px', borderRadius: '12px', color: '#10b981' }}><UserCheck size={32} /></div>
           <div>
@@ -217,20 +285,33 @@ function Attendance() {
               style={{ width: '100%', padding: '10px 10px 10px 40px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', width: '200px', justifyContent: 'space-between' }}>
-            All Departments
-            <ChevronDown size={16} color="#94a3b8" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', width: '160px', justifyContent: 'space-between' }}>
-            All Status
-            <ChevronDown size={16} color="#94a3b8" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', width: '180px', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <CalendarDays size={16} color="#94a3b8" />
-              10 Oct 2026
-            </div>
-          </div>
+          <CustomSelect
+            value={departmentFilter}
+            onChange={setDepartmentFilter}
+            options={departments.map(d => ({ value: d.name, label: d.name }))}
+            placeholder="All Departments"
+            width="180px"
+          />
+          
+          <CustomSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'PRESENT', label: 'Present' },
+              { value: 'ABSENT', label: 'Absent' },
+              { value: 'LATE', label: 'Late' },
+              { value: 'ON_LEAVE', label: 'On Leave' }
+            ]}
+            placeholder="All Status"
+            width="140px"
+          />
+
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', outline: 'none', backgroundColor: 'white', minWidth: '140px' }}
+          />
           <button
             onClick={fetchAttendanceData}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '14px', color: '#475569', cursor: 'pointer', backgroundColor: 'white' }}

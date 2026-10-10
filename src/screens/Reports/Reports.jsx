@@ -1,4 +1,5 @@
 import React from 'react';
+import axiosClient from '../../api/axiosClient'; from 'react';
 import { 
   Download, ChevronDown, CalendarDays, Search, Users, 
   CheckCircle2, XCircle, Clock, Plane, TrendingUp, Eye
@@ -10,6 +11,9 @@ import {
 
 import { useState, useEffect } from 'react';
 import { getAttendance } from '../../api/attendanceApi';
+import { getLeaveRequests } from '../../api/leaveApi';
+import { getEmployees } from '../../api/employeeApi';
+import { getDepartments } from '../../api/departmentApi';
 
 function Reports() {
   const [loading, setLoading] = useState(true);
@@ -18,6 +22,12 @@ function Reports() {
   const [trendData, setTrendData] = useState([]);
   const [deptWiseData, setDeptWiseData] = useState([]);
   const [reportRecords, setReportRecords] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('Attendance Report');
+  const [employeeRecords, setEmployeeRecords] = useState([]);
+  const [leaveRecords, setLeaveRecords] = useState([]);
+  const [departmentRecords, setDepartmentRecords] = useState([]);
+  const [backendStats, setBackendStats] = useState(null);
 
   // Filter state
   const [listMonth, setListMonth] = useState(() => {
@@ -42,6 +52,17 @@ function Reports() {
       setRawRecords(records);
       
       aggregateData(records, lastDayDate.getDate());
+
+      const [empRes, leaveRes, deptRes, statsRes] = await Promise.all([
+        getEmployees(),
+        getLeaveRequests(),
+        getDepartments(),
+        axiosClient.get('/api/reports/stats')
+      ]);
+      setEmployeeRecords(empRes.data || []);
+      setLeaveRecords(leaveRes.data || []);
+      setDepartmentRecords(deptRes.data || []);
+      setBackendStats(statsRes.data);
     } catch (error) {
       console.error('Failed to fetch report data', error);
     } finally {
@@ -118,6 +139,13 @@ function Reports() {
     setReportRecords(tableData);
   };
 
+  const filteredReportRecords = reportRecords.filter(record => {
+    if (!searchTerm) return true;
+    const lowerSearch = searchTerm.toLowerCase();
+    return record.name.toLowerCase().includes(lowerSearch) || 
+           record.empId.toLowerCase().includes(lowerSearch);
+  });
+
   return (
     <div>
       {/* Header Area */}
@@ -135,18 +163,25 @@ function Reports() {
 
       {/* Horizontal Tabs */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '4px' }}>
-        <div style={{ padding: '10px 20px', backgroundColor: '#eaf6f6', color: '#0d9488', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #0d9488', whiteSpace: 'nowrap' }}>
-          Attendance Report
-        </div>
-        <div style={{ padding: '10px 20px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          Leave Report
-        </div>
-        <div style={{ padding: '10px 20px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          Employee Report
-        </div>
-        <div style={{ padding: '10px 20px', backgroundColor: 'white', color: '#64748b', borderRadius: '8px', fontWeight: '500', fontSize: '14px', cursor: 'pointer', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-          Department Report
-        </div>
+        {['Attendance Report', 'Leave Report', 'Employee Report', 'Department Report'].map(tab => (
+          <div 
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{ 
+              padding: '10px 20px', 
+              backgroundColor: activeTab === tab ? '#eaf6f6' : 'white', 
+              color: activeTab === tab ? '#0d9488' : '#64748b', 
+              borderRadius: '8px', 
+              fontWeight: '500', 
+              fontSize: '14px', 
+              cursor: 'pointer', 
+              border: activeTab === tab ? '1px solid #0d9488' : '1px solid #e2e8f0', 
+              whiteSpace: 'nowrap' 
+            }}
+          >
+            {tab}
+          </div>
+        ))}
       </div>
 
       {/* Filter Bar */}
@@ -191,60 +226,89 @@ function Reports() {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Dynamic Stats Grid */}
       <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '16px', marginBottom: '24px' }}>
         
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-          <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Users size={24} /></div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Employees</p>
-            <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.totalEmp}</h2>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-          <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', color: '#10b981' }}><CheckCircle2 size={24} /></div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Present Days</p>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.present}</h2>
+        {activeTab === 'Attendance Report' && (
+          <>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Users size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Employees</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.totalEmp}</h2></div>
             </div>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-          <div style={{ backgroundColor: '#fef2f2', padding: '12px', borderRadius: '10px', color: '#ef4444' }}><XCircle size={24} /></div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Absent Days</p>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.absent}</h2>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', color: '#10b981' }}><CheckCircle2 size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Present Days</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.present}</h2></div>
             </div>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-          <div style={{ backgroundColor: '#fff7ed', padding: '12px', borderRadius: '10px', color: '#f59e0b' }}><Clock size={24} /></div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Late Days</p>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.late}</h2>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#fef2f2', padding: '12px', borderRadius: '10px', color: '#ef4444' }}><XCircle size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Absent Days</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.absent}</h2></div>
             </div>
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
-          <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Plane size={24} /></div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Leave Days</p>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
-              <h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.leave}</h2>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#fff7ed', padding: '12px', borderRadius: '10px', color: '#f59e0b' }}><Clock size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Late Days</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.late}</h2></div>
             </div>
-          </div>
-        </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Plane size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Leave Days</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{loading ? '-' : stats.leave}</h2></div>
+            </div>
+          </>
+        )}
 
+        {activeTab === 'Leave Report' && backendStats && (
+          <>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Plane size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Leaves</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.leave.total}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', color: '#10b981' }}><CheckCircle2 size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Approved</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.leave.approved}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#fff7ed', padding: '12px', borderRadius: '10px', color: '#f59e0b' }}><Clock size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Pending</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.leave.pending}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#fef2f2', padding: '12px', borderRadius: '10px', color: '#ef4444' }}><XCircle size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Rejected</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.leave.rejected}</h2></div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'Employee Report' && backendStats && (
+          <>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><Users size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Employees</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.employee.total}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', color: '#10b981' }}><CheckCircle2 size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Active</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.employee.active}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#fef2f2', padding: '12px', borderRadius: '10px', color: '#ef4444' }}><XCircle size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Inactive</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.employee.inactive}</h2></div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'Department Report' && backendStats && (
+          <>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', color: '#3b82f6' }}><TrendingUp size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Departments</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.department.total}</h2></div>
+            </div>
+            <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '20px', display: 'flex', gap: '12px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #f1f5f9' }}>
+              <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', color: '#10b981' }}><Users size={24} /></div>
+              <div><p style={{ color: '#64748b', fontSize: '12px', margin: '0 0 4px 0' }}>Total Employees</p><h2 style={{ fontSize: '24px', margin: 0, color: '#0f172a' }}>{backendStats.department.totalEmployees}</h2></div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Charts Row */}
+      {activeTab === 'Attendance Report' && (
+{/* Charts Row */}
       <div className="charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
         
         {/* Attendance Trend Chart */}
@@ -312,18 +376,21 @@ function Reports() {
         </div>
 
       </div>
+      )}
 
       {/* Main Table Card */}
       <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-          <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Employee Attendance Details</h3>
+          <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{activeTab} Details</h3>
           <div style={{ display: 'flex', gap: '12px' }}>
             <div style={{ position: 'relative', width: '250px' }}>
               <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 type="text" 
                 placeholder="Search by name or employee ID..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ width: '100%', padding: '8px 10px 8px 36px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
@@ -356,14 +423,14 @@ function Reports() {
                     Loading reports...
                   </td>
                 </tr>
-              ) : reportRecords.length === 0 ? (
+              ) : filteredReportRecords.length === 0 ? (
                 <tr>
                   <td colSpan={10} style={{ textAlign: 'center', padding: '60px 0', color: '#64748b' }}>
                     No data available for the selected period.
                   </td>
                 </tr>
               ) : (
-                reportRecords.map((record) => (
+                filteredReportRecords.map((record) => (
                 <tr key={record.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '16px', color: '#0f172a', fontWeight: '500' }}>{record.id}</td>
                   <td style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>

@@ -830,6 +830,12 @@ td {
     overflow-x: auto;
     white-space: nowrap;
   }
+  
+  .department-overview-content {
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 24px;
+  }
 }
 .material-symbols-rounded {
   font-family: 'Material Symbols Rounded', sans-serif;

@@ -5,6 +5,32 @@ import { getDashboardSummary, getRecentEmployees, getPendingLeaves, getDepartmen
 import { getAttendanceSummary } from '../../api/attendanceApi';
 import { makeLeaveDecision } from '../../api/leaveApi';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    this.setState({ error, info });
+    console.error("ErrorBoundary caught an error", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: '8px' }}>
+          <h3>Dashboard Crashed!</h3>
+          <p><strong>Error:</strong> {this.state.error?.toString()}</p>
+          <pre style={{ fontSize: '12px', overflowX: 'auto' }}>{this.state.info?.componentStack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const getStatusColor = (status) => {
   if (!status) return '#f1f5f9';
   const s = status.toUpperCase();
@@ -29,6 +55,9 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [recentEmployees, setRecentEmployees] = useState([]);
+  const [pendingLeavesList, setPendingLeavesList] = useState([]);
+  const [deptStats, setDeptStats] = useState([]);
+  const [attendanceChart, setAttendanceChart] = useState([]);
   const [listMonth, setListMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -229,8 +258,8 @@ function Dashboard() {
               All Departments <ChevronDown size={14} />
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', height: '250px' }}>
-            <div style={{ flex: '1', height: '100%', position: 'relative' }}>
+          <div className="department-overview-content" style={{ height: '250px' }}>
+            <div style={{ flex: '1', height: '100%', position: 'relative', minHeight: '150px' }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={deptStats} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value">
@@ -245,7 +274,7 @@ function Dashboard() {
                 <div style={{ fontSize: '12px', color: '#64748b' }}>Employees</div>
               </div>
             </div>
-            <div style={{ flex: '1' }}>
+            <div style={{ flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               {deptStats.map((dept, idx) => (
                 <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '13px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569' }}>
@@ -266,46 +295,48 @@ function Dashboard() {
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Recent Employees</h3>
             <a href="#" style={{ color: '#0d9488', fontSize: '13px', textDecoration: 'none', fontWeight: '500' }}>View All</a>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-            <thead>
-              <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '12px 8px' }}>#</th>
-                <th style={{ padding: '12px 8px' }}>Name</th>
-                <th style={{ padding: '12px 8px' }}>Employee ID</th>
-                <th style={{ padding: '12px 8px' }}>Department</th>
-                <th style={{ padding: '12px 8px' }}>Joining Date</th>
-                <th style={{ padding: '12px 8px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentEmployees.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>No recent employees</td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '600px' }}>
+              <thead>
+                <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
+                  <th style={{ padding: '12px 8px' }}>#</th>
+                  <th style={{ padding: '12px 8px' }}>Name</th>
+                  <th style={{ padding: '12px 8px' }}>Employee ID</th>
+                  <th style={{ padding: '12px 8px' }}>Department</th>
+                  <th style={{ padding: '12px 8px' }}>Joining Date</th>
+                  <th style={{ padding: '12px 8px' }}>Status</th>
                 </tr>
-              ) : (
-                recentEmployees.map((emp, idx) => {
-                  const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeName || 'Unknown';
-                  return (
-                    <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
-                      <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
-                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=e2e8f0`} alt={fullName} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                        {fullName}
-                      </td>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.employeeCode || '-'}</td>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.departmentName || '-'}</td>
-                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.joiningDate || '-'}</td>
-                      <td style={{ padding: '12px 8px' }}>
-                        <span style={{ backgroundColor: getStatusColor(emp.status), color: getStatusTextColor(emp.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
-                          {emp.status === 'ACTIVE' ? 'Active' : emp.status}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentEmployees.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>No recent employees</td>
+                  </tr>
+                ) : (
+                  recentEmployees.map((emp, idx) => {
+                    const fullName = `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeName || 'Unknown';
+                    return (
+                      <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
+                        <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
+                          <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=e2e8f0`} alt={fullName} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                          {fullName}
+                        </td>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.employeeCode || '-'}</td>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.departmentName || '-'}</td>
+                        <td style={{ padding: '12px 8px', color: '#64748b' }}>{emp.joiningDate || '-'}</td>
+                        <td style={{ padding: '12px 8px' }}>
+                          <span style={{ backgroundColor: getStatusColor(emp.status), color: getStatusTextColor(emp.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>
+                            {emp.status === 'ACTIVE' ? 'Active' : emp.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div style={{ backgroundColor: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -313,56 +344,64 @@ function Dashboard() {
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Pending Leave Requests</h3>
             <a href="#" style={{ color: '#0d9488', fontSize: '13px', textDecoration: 'none', fontWeight: '500' }}>View All</a>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-            <thead>
-              <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
-                <th style={{ padding: '12px 8px' }}>#</th>
-                <th style={{ padding: '12px 8px' }}>Employee</th>
-                <th style={{ padding: '12px 8px' }}>Leave Type</th>
-                <th style={{ padding: '12px 8px' }}>From Date</th>
-                <th style={{ padding: '12px 8px' }}>To Date</th>
-                <th style={{ padding: '12px 8px' }}>Status</th>
-                <th style={{ padding: '12px 8px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pendingLeavesList.length === 0 ? (
-                <tr>
-                  <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>No pending leaves</td>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', minWidth: '700px' }}>
+              <thead>
+                <tr style={{ color: '#64748b', borderBottom: '1px solid #e2e8f0', textAlign: 'left' }}>
+                  <th style={{ padding: '12px 8px' }}>#</th>
+                  <th style={{ padding: '12px 8px' }}>Employee</th>
+                  <th style={{ padding: '12px 8px' }}>Leave Type</th>
+                  <th style={{ padding: '12px 8px' }}>From Date</th>
+                  <th style={{ padding: '12px 8px' }}>To Date</th>
+                  <th style={{ padding: '12px 8px' }}>Status</th>
+                  <th style={{ padding: '12px 8px', textAlign: 'center' }}>Actions</th>
                 </tr>
-              ) : (
-                pendingLeavesList.map((leave, idx) => (
-                  <tr key={leave.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
-                    <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
-                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(leave.employeeName || 'User')}&background=e2e8f0`} alt={leave.employeeName} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
-                      {leave.employeeName}
-                    </td>
-                    <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.leaveType}</td>
-                    <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.startDate}</td>
-                    <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.endDate}</td>
-                    <td style={{ padding: '12px 8px' }}>
-                      <span style={{ backgroundColor: getStatusColor(leave.status), color: getStatusTextColor(leave.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>{leave.status}</span>
-                    </td>
-                    <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                      {leave.status === 'PENDING' ? (
-                         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                           <div onClick={() => handleLeaveDecision(leave.id, 'APPROVED')} title="Approve" style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#16a34a' }}><Check size={14} /></div>
-                           <div onClick={() => handleLeaveDecision(leave.id, 'REJECTED')} title="Reject" style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626' }}><X size={14} /></div>
-                         </div>
-                      ) : (
-                         <div style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', margin: '0 auto' }}><Eye size={14} /></div>
-                      )}
-                    </td>
+              </thead>
+              <tbody>
+                {pendingLeavesList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#94a3b8' }}>No pending leaves</td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  pendingLeavesList.map((leave, idx) => (
+                    <tr key={leave.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{idx + 1}</td>
+                      <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
+                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(leave.employeeName || 'User')}&background=e2e8f0`} alt={leave.employeeName} style={{ width: '24px', height: '24px', borderRadius: '50%' }} />
+                        {leave.employeeName}
+                      </td>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.leaveType}</td>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.startDate}</td>
+                      <td style={{ padding: '12px 8px', color: '#64748b' }}>{leave.endDate}</td>
+                      <td style={{ padding: '12px 8px' }}>
+                        <span style={{ backgroundColor: getStatusColor(leave.status), color: getStatusTextColor(leave.status), padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: '500' }}>{leave.status}</span>
+                      </td>
+                      <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                        {leave.status === 'PENDING' ? (
+                           <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                             <div onClick={() => handleLeaveDecision(leave.id, 'APPROVED')} title="Approve" style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#16a34a' }}><Check size={14} /></div>
+                             <div onClick={() => handleLeaveDecision(leave.id, 'REJECTED')} title="Reject" style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626' }}><X size={14} /></div>
+                           </div>
+                        ) : (
+                           <div style={{ width: '24px', height: '24px', border: '1px solid #e2e8f0', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', margin: '0 auto' }}><Eye size={14} /></div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </>
   );
 }
 
-export default Dashboard;
+export default function DashboardWrapper() {
+  return (
+    <ErrorBoundary>
+      <Dashboard />
+    </ErrorBoundary>
+  );
+}
