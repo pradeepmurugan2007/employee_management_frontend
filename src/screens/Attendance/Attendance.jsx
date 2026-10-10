@@ -119,13 +119,17 @@ function Attendance() {
           <p style={{ color: '#64748b', margin: 0, fontSize: '15px' }}>View and manage employee attendance records</p>
         </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative' }}>
+          <div style={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
             <CalendarDays size={18} color="#64748b" />
+            <span style={{ color: '#0f172a' }}>
+              {new Date(listMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </span>
+            <ChevronDown size={16} color="#64748b" style={{ marginLeft: '4px' }} />
             <input 
               type="month" 
               value={listMonth}
               onChange={(e) => setListMonth(e.target.value)}
-              style={{ border: 'none', outline: 'none', color: '#334155', fontWeight: '500', fontFamily: 'inherit', background: 'transparent', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
             />
           </div>
           <button

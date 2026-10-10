@@ -2,6 +2,21 @@ import React, { useState } from 'react';
 import { ArrowLeft, Building2, Save } from 'lucide-react';
 import { createDepartment } from '../../api/departmentApi';
 
+const STANDARD_DEPARTMENTS = [
+  { name: "Software Development", code: "DEV" },
+  { name: "Human Resources", code: "HR" },
+  { name: "Finance", code: "FIN" },
+  { name: "Marketing", code: "MKT" },
+  { name: "Sales", code: "SAL" },
+  { name: "Customer Support", code: "CS" },
+  { name: "Quality Assurance", code: "QA" },
+  { name: "Operations", code: "OPS" },
+  { name: "Design", code: "DES" },
+  { name: "Product Management", code: "PM" },
+  { name: "IT Support", code: "IT" },
+  { name: "Legal", code: "LEG" }
+];
+
 function AddDepartment({ onBack, onSaveSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,7 +29,16 @@ function AddDepartment({ onBack, onSaveSuccess }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'name') {
+      const selectedDept = STANDARD_DEPARTMENTS.find(d => d.name === value);
+      setFormData(prev => ({ 
+        ...prev, 
+        name: value,
+        code: selectedDept ? selectedDept.code : prev.code
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSave = async () => {
@@ -28,7 +52,7 @@ function AddDepartment({ onBack, onSaveSuccess }) {
     
     try {
       await createDepartment({
-        departmentName: formData.name,
+        name: formData.name, // Fixed: was departmentName but backend expects name
         code: formData.code,
         description: formData.description,
         status: formData.status
@@ -104,11 +128,16 @@ function AddDepartment({ onBack, onSaveSuccess }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department Name <span style={{ color: '#ef4444' }}>*</span></label>
-                <input name="name" value={formData.name} onChange={handleChange} type="text" placeholder="e.g., Software Development" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                <select name="name" value={formData.name} onChange={handleChange} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: 'white' }}>
+                  <option value="">Select a Department</option>
+                  {STANDARD_DEPARTMENTS.map(dept => (
+                    <option key={dept.code} value={dept.name}>{dept.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '8px' }}>Department Code <span style={{ color: '#ef4444' }}>*</span></label>
-                <input name="code" value={formData.code} onChange={handleChange} type="text" placeholder="e.g., DEV" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                <input name="code" value={formData.code} readOnly type="text" placeholder="Auto-generated" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box', backgroundColor: '#f8fafc', color: '#64748b' }} />
               </div>
             </div>
             
