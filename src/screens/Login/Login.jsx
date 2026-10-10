@@ -149,7 +149,7 @@ function Login() {
                       style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </div>
                   </div>
                 </div>
@@ -207,7 +207,7 @@ function Login() {
                       style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
                       onClick={() => setShowSignupPassword(!showSignupPassword)}
                     >
-                      {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showSignupPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </div>
                   </div>
                 </div>
@@ -228,7 +228,7 @@ function Login() {
                       style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#64748b", display: "flex", alignItems: "center" }}
                       onClick={() => setShowVerifyPassword(!showVerifyPassword)}
                     >
-                      {showVerifyPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showVerifyPassword ? <Eye size={18} /> : <EyeOff size={18} />}
                     </div>
                   </div>
                 </div>
