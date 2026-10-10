@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, CalendarDays, Clock, ShieldCheck, 
   Bell, Database, Upload, Info
@@ -6,6 +6,50 @@ import {
 import logo from "../../assets/logo.svg";
 
 function Settings() {
+  const defaultSettings = {
+    companyName: 'EmpLy',
+    emailAddress: 'info@emply.com',
+    phoneNumber: '9876543210',
+    address: '123, Business Park,\nCoimbatore, Tamil\nNadu - 641001',
+    website: 'https://www.emply.com',
+    dateFormat: 'dd/mm/yyyy',
+    timeFormat: '12 Hour (AM/PM)',
+    language: 'English',
+    itemsPerPage: '10',
+    enableDarkMode: false,
+    enableEmailNotifications: true,
+    minPasswordLength: 8,
+    requireUppercase: true,
+    requireLowercase: true,
+    requireNumber: true,
+    requireSpecialChar: false,
+    sessionTimeout: 30,
+    autoLogout: true,
+    allowMultipleSessions: false,
+    rememberMeDuration: 7
+  };
+
+  const [settings, setSettings] = useState(() => {
+    const saved = localStorage.getItem('appSettings');
+    return saved ? JSON.parse(saved) : defaultSettings;
+  });
+
+  const handleChange = (field, value) => {
+    setSettings(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+    alert('Settings saved successfully!');
+  };
+
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset all settings to defaults?')) {
+      setSettings(defaultSettings);
+      localStorage.removeItem('appSettings');
+    }
+  };
+
   return (
     <div>
       {/* Header Area */}
@@ -58,26 +102,26 @@ function Settings() {
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Company Name <span style={{ color: '#ef4444' }}>*</span></label>
-                  <input type="text" defaultValue="EmpLy" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                  <input type="text" value={settings.companyName} onChange={e => handleChange('companyName', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Email Address <span style={{ color: '#ef4444' }}>*</span></label>
-                  <input type="email" defaultValue="info@emply.com" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                  <input type="email" value={settings.emailAddress} onChange={e => handleChange('emailAddress', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Phone Number</label>
-                  <input type="tel" defaultValue="9876543210" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                  <input type="tel" value={settings.phoneNumber} onChange={e => handleChange('phoneNumber', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Address</label>
-                  <textarea defaultValue="123, Business Park,&#10;Coimbatore, Tamil&#10;Nadu - 641001" rows={3} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}></textarea>
+                  <textarea value={settings.address} onChange={e => handleChange('address', e.target.value)} rows={3} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', outline: 'none', resize: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}></textarea>
                 </div>
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Website</label>
-                <input type="url" defaultValue="https://www.emply.com" style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
+                <input type="url" value={settings.website} onChange={e => handleChange('website', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
               </div>
             </div>
           </div>
@@ -93,26 +137,34 @@ function Settings() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Date Format <span style={{ color: '#ef4444' }}>*</span></label>
-              <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
+              <select value={settings.dateFormat} onChange={e => handleChange('dateFormat', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
                 <option>dd/mm/yyyy</option>
+                <option>mm/dd/yyyy</option>
+                <option>yyyy-mm-dd</option>
               </select>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Time Format <span style={{ color: '#ef4444' }}>*</span></label>
-              <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
+              <select value={settings.timeFormat} onChange={e => handleChange('timeFormat', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
                 <option>12 Hour (AM/PM)</option>
+                <option>24 Hour</option>
               </select>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Default Language <span style={{ color: '#ef4444' }}>*</span></label>
-              <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
+              <select value={settings.language} onChange={e => handleChange('language', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
                 <option>English</option>
+                <option>Spanish</option>
+                <option>French</option>
               </select>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#0f172a', marginBottom: '6px' }}>Items Per Page</label>
-              <select style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
+              <select value={settings.itemsPerPage} onChange={e => handleChange('itemsPerPage', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', color: '#0f172a', outline: 'none', backgroundColor: 'white', boxSizing: 'border-box' }}>
                 <option>10</option>
+                <option>25</option>
+                <option>50</option>
+                <option>100</option>
               </select>
             </div>
           </div>
@@ -120,9 +172,8 @@ function Settings() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {/* Toggle Off */}
-                <div style={{ width: '40px', height: '22px', backgroundColor: '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: '2px' }}></div>
+                <div onClick={() => handleChange('enableDarkMode', !settings.enableDarkMode)} style={{ width: '40px', height: '22px', backgroundColor: settings.enableDarkMode ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.enableDarkMode ? 'auto' : '2px', right: settings.enableDarkMode ? '2px' : 'auto', transition: 'all 0.2s' }}></div>
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a' }}>Enable Dark Mode</div>
@@ -133,9 +184,8 @@ function Settings() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* Toggle On */}
-              <div style={{ width: '40px', height: '22px', backgroundColor: '#0d9488', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }}></div>
+              <div onClick={() => handleChange('enableEmailNotifications', !settings.enableEmailNotifications)} style={{ width: '40px', height: '22px', backgroundColor: settings.enableEmailNotifications ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.enableEmailNotifications ? 'auto' : '2px', right: settings.enableEmailNotifications ? '2px' : 'auto', transition: 'all 0.2s' }}></div>
               </div>
               <div>
                 <div style={{ fontSize: '14px', fontWeight: '500', color: '#0f172a' }}>Enable Email Notifications</div>
@@ -145,10 +195,10 @@ function Settings() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-            <button style={{ backgroundColor: 'white', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
+            <button onClick={handleReset} style={{ backgroundColor: 'white', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}>
               Reset
             </button>
-            <button style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
+            <button onClick={handleSave} style={{ backgroundColor: '#0d9488', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(13, 148, 136, 0.2)' }}>
               Save Changes
             </button>
           </div>
@@ -161,32 +211,32 @@ function Settings() {
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
             <div style={{ fontSize: '14px', color: '#0f172a' }}>Minimum Password Length</div>
-            <input type="number" defaultValue="8" style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
+            <input type="number" value={settings.minPasswordLength} onChange={e => handleChange('minPasswordLength', e.target.value)} style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '14px', color: '#0f172a' }}>Require Uppercase Letter</div>
-              <div style={{ width: '40px', height: '22px', backgroundColor: '#0d9488', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }}></div>
+              <div onClick={() => handleChange('requireUppercase', !settings.requireUppercase)} style={{ width: '40px', height: '22px', backgroundColor: settings.requireUppercase ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.requireUppercase ? 'auto' : '2px', right: settings.requireUppercase ? '2px' : 'auto' }}></div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '14px', color: '#0f172a' }}>Require Lowercase Letter</div>
-              <div style={{ width: '40px', height: '22px', backgroundColor: '#0d9488', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }}></div>
+              <div onClick={() => handleChange('requireLowercase', !settings.requireLowercase)} style={{ width: '40px', height: '22px', backgroundColor: settings.requireLowercase ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.requireLowercase ? 'auto' : '2px', right: settings.requireLowercase ? '2px' : 'auto' }}></div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '14px', color: '#0f172a' }}>Require Number</div>
-              <div style={{ width: '40px', height: '22px', backgroundColor: '#0d9488', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }}></div>
+              <div onClick={() => handleChange('requireNumber', !settings.requireNumber)} style={{ width: '40px', height: '22px', backgroundColor: settings.requireNumber ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.requireNumber ? 'auto' : '2px', right: settings.requireNumber ? '2px' : 'auto' }}></div>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: '14px', color: '#0f172a' }}>Require Special Character</div>
-              <div style={{ width: '40px', height: '22px', backgroundColor: '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: '2px' }}></div>
+              <div onClick={() => handleChange('requireSpecialChar', !settings.requireSpecialChar)} style={{ width: '40px', height: '22px', backgroundColor: settings.requireSpecialChar ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.requireSpecialChar ? 'auto' : '2px', right: settings.requireSpecialChar ? '2px' : 'auto' }}></div>
               </div>
             </div>
           </div>
@@ -201,12 +251,12 @@ function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '14px', color: '#0f172a' }}>Session Timeout (minutes)</div>
-                <input type="number" defaultValue="30" style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
+                <input type="number" value={settings.sessionTimeout} onChange={e => handleChange('sessionTimeout', e.target.value)} style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '14px', color: '#0f172a' }}>Auto Logout on Inactivity</div>
-                <div style={{ width: '40px', height: '22px', backgroundColor: '#0d9488', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', right: '2px' }}></div>
+                <div onClick={() => handleChange('autoLogout', !settings.autoLogout)} style={{ width: '40px', height: '22px', backgroundColor: settings.autoLogout ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.autoLogout ? 'auto' : '2px', right: settings.autoLogout ? '2px' : 'auto' }}></div>
                 </div>
               </div>
             </div>
@@ -214,13 +264,13 @@ function Settings() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '14px', color: '#0f172a' }}>Allow Multiple Login Sessions</div>
-                <div style={{ width: '40px', height: '22px', backgroundColor: '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
-                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: '2px' }}></div>
+                <div onClick={() => handleChange('allowMultipleSessions', !settings.allowMultipleSessions)} style={{ width: '40px', height: '22px', backgroundColor: settings.allowMultipleSessions ? '#0d9488' : '#cbd5e1', borderRadius: '20px', position: 'relative', cursor: 'pointer' }}>
+                  <div style={{ width: '18px', height: '18px', backgroundColor: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: settings.allowMultipleSessions ? 'auto' : '2px', right: settings.allowMultipleSessions ? '2px' : 'auto' }}></div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '14px', color: '#0f172a' }}>Remember Me Duration (days)</div>
-                <input type="number" defaultValue="7" style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
+                <input type="number" value={settings.rememberMeDuration} onChange={e => handleChange('rememberMeDuration', e.target.value)} style={{ width: '60px', padding: '8px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', textAlign: 'center', outline: 'none' }} />
               </div>
             </div>
           </div>

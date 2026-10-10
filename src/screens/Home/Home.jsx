@@ -34,8 +34,9 @@ function Home() {
       {/* Sidebar */}
       <aside className={`sidebar ${!isSidebarOpen ? 'closed' : ''}`} style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
-          <a href="#" className="sidebar-logo" style={{ marginBottom: '30px', justifyContent: 'center' }}>
-            <img src={logo} alt="EmpLy Logo" style={{ width: '48px', height: '48px', marginRight: '12px' }} />
+          <a href="#" className="sidebar-logo" style={{ marginBottom: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+            <img src={logo} alt="EmpLy Logo" style={{ width: '64px', height: '64px', marginRight: '8px' }} />
+            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#0d9488', letterSpacing: '-0.5px' }}>EmpLy</span>
           </a>
           <div className="sidebar-nav">
             <div className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
